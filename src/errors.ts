@@ -57,6 +57,19 @@ export function attachRequestContext(error: unknown, ctx: RequestContext): void 
   }
 }
 
+export type ResponseContext = {
+  status: number;
+  statusText: string;
+};
+
+export const responseContextKey = Symbol("@http-contract:response_context");
+
+export function attachResponseContext(error: unknown, ctx: ResponseContext): void {
+  if (typeof error === "object" && error !== null) {
+    (error as Record<symbol, unknown>)[responseContextKey] = ctx;
+  }
+}
+
 export class HttpContractJsonParseError extends TaggedError("HttpContractJsonParseError")<{
   cause: unknown;
   message: string;

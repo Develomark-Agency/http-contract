@@ -2,7 +2,7 @@ import { Result, type Result as BetterResult } from "better-result";
 
 export function normalizeHookResult(value: unknown) {
   if (isResult(value)) return value.status === "ok" ? Result.ok(undefined) : Result.err(value.error);
-  if (value === undefined) return Result.ok(undefined);
+  if (value == null) return Result.ok(undefined);
   return Result.err(value);
 }
 

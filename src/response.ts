@@ -1,6 +1,6 @@
 import { Op } from "@prodkit/op";
 import { Result, type Result as BetterResult } from "better-result";
-import { attachRequestContext, toBodyError, type RequestContext } from "./errors";
+import { attachRequestContext, attachResponseContext, toBodyError, type RequestContext, type ResponseContext } from "./errors";
 import { normalizeTransformResult } from "./result-utils";
 import { validateInput } from "./schema";
 import type { EndpointState, ResponseMode, RuntimeContext } from "./types";
@@ -42,19 +42,32 @@ export function createTypedResponse(state: EndpointState, res: Response, ctx: Ru
 
 async function readBodyResult(state: EndpointState, res: Response, ctx: RuntimeContext, reader: BodyReaderRuntime) {
   const requestCtx: RequestContext = { method: ctx.method, url: String(ctx.url) };
+  const responseCtx: ResponseContext = { status: res.status, statusText: res.statusText };
 
   const parsed = await Result.tryPromise({
     try: () => reader.read(res.clone() as unknown as Response),
     catch: cause => toBodyError(cause, reader.kind)
   });
-  if (parsed.isErr()) { attachRequestContext(parsed.error, requestCtx); return parsed; }
+  if (parsed.isErr()) {
+    attachRequestContext(parsed.error, requestCtx);
+    attachResponseContext(parsed.error, responseCtx);
+    return parsed;
+  }
 
   const output = await validateInput(state.outputSchema, parsed.value, "output");
-  if (output.isErr()) { attachRequestContext(output.error, requestCtx); return output; }
+  if (output.isErr()) {
+    attachRequestContext(output.error, requestCtx);
+    attachResponseContext(output.error, responseCtx);
+    return output;
+  }
 
   if (state.transform) {
     const transformed = normalizeTransformResult(await state.transform({ ...ctx, value: output.value }), output.value);
-    if (transformed.isErr()) { attachRequestContext(transformed.error, requestCtx); return transformed; }
+    if (transformed.isErr()) {
+      attachRequestContext(transformed.error, requestCtx);
+      attachResponseContext(transformed.error, responseCtx);
+      return transformed;
+    }
     return Result.ok(transformed.value);
   }
 

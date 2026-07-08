@@ -6,7 +6,8 @@ export {
   HttpContractJsonParseError,
   HttpContractRequestBuildError,
   HttpContractSchemaError,
-  requestContextKey
+  requestContextKey,
+  responseContextKey
 } from "./src/errors";
 export type { TypedResponse } from "./src/types";
-export type { RequestContext } from "./src/errors";
+export type { RequestContext, ResponseContext } from "./src/errors";

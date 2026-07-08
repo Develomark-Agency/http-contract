@@ -1,6 +1,6 @@
 import { Op } from "@prodkit/op";
 import { Result, type Result as BetterResult } from "better-result";
-import { attachRequestContext, HttpContractRequestBuildError, toFetchError, type RequestContext } from "./errors";
+import { attachRequestContext, attachResponseContext, HttpContractRequestBuildError, toFetchError, type RequestContext, type ResponseContext } from "./errors";
 import { createTypedResponse } from "./response";
 import { normalizeHookResult } from "./result-utils";
 import { validateInput } from "./schema";
@@ -130,13 +130,15 @@ async function execute(state: EndpointState, args: Record<string, unknown>, mode
     return Result.err(err);
   }
 
+  const responseCtx: ResponseContext = { status: res.status, statusText: res.statusText };
+
   for (const hook of state.api.onResponse ?? []) {
     const hookResult = normalizeHookResult(await hook({ res, url, init }));
-    if (hookResult.isErr()) { attachRequestContext(hookResult.error, requestCtx); return hookResult; }
+    if (hookResult.isErr()) { attachRequestContext(hookResult.error, requestCtx); attachResponseContext(hookResult.error, responseCtx); return hookResult; }
   }
 
   const responseHeaders = await validateInput(state.responseHeadersSchema, headersToRecord(res.headers), "responseHeaders");
-  if (responseHeaders.isErr()) { attachRequestContext(responseHeaders.error, requestCtx); return responseHeaders; }
+  if (responseHeaders.isErr()) { attachRequestContext(responseHeaders.error, requestCtx); attachResponseContext(responseHeaders.error, responseCtx); return responseHeaders; }
 
   const ctx: RuntimeContext = {
     res,
@@ -149,7 +151,7 @@ async function execute(state: EndpointState, args: Record<string, unknown>, mode
 
   if (state.validate) {
     const validation = normalizeHookResult(await state.validate(ctx));
-    if (validation.isErr()) { attachRequestContext(validation.error, requestCtx); return validation; }
+    if (validation.isErr()) { attachRequestContext(validation.error, requestCtx); attachResponseContext(validation.error, responseCtx); return validation; }
   }
 
   return Result.ok(createTypedResponse(state, res, ctx, mode));
