@@ -3,7 +3,9 @@ import { createEndpoint } from "./endpoint";
 import type { ApiOptions, DefaultPathParams, Endpoint, PathParamNames } from "./types";
 
 export function defineApi<const T extends ApiOptions>(options: T) {
+  type OnRequestErrors = ExtractHookErrors<T["onRequest"]>;
   type OnResponseErrors = ExtractHookErrors<T["onResponse"]>;
+  type HookErrors = OnRequestErrors | OnResponseErrors;
 
   return {
     endpoint<const Template extends string>(template: Template) {
@@ -12,7 +14,7 @@ export function defineApi<const T extends ApiOptions>(options: T) {
         template,
         method: "get",
         methodSet: false
-      }) as unknown as Endpoint<Template, PathParamNames<Template>, false, DefaultPathParams<Template>, never, never, never, unknown, OnResponseErrors>;
+      }) as unknown as Endpoint<Template, PathParamNames<Template>, false, DefaultPathParams<Template>, never, never, never, unknown, HookErrors>;
     }
   };
 }

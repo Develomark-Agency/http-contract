@@ -191,3 +191,40 @@ type _HooksResultErrorIncludesBuiltIn = AssertAssignable<
   HooksResultError,
   BuiltInRequestError
 >;
+
+// --- onRequest error types are tracked ---
+
+class AuthError extends Error {
+  readonly _tag = "AuthError";
+}
+
+class RateLimitError extends Error {
+  readonly _tag = "RateLimitError";
+}
+
+const apiWithRequestHooks = defineApi({
+  baseUrl: "https://example.com",
+  onRequest: [
+    () => Result.err(new AuthError("unauthorized")),
+  ],
+  onResponse: [
+    (ctx) => {
+      if (ctx.res.status === 429) return Result.err(new RateLimitError("rate limited"));
+    },
+  ],
+});
+
+const requestHookEndpoint = apiWithRequestHooks.endpoint("/posts");
+type RequestHookResultError = InferResultError<ReturnType<typeof requestHookEndpoint.result>>;
+type _RequestHookResultErrorIncludesAuth = AssertAssignable<
+  RequestHookResultError,
+  AuthError
+>;
+type _RequestHookResultErrorIncludesRateLimit = AssertAssignable<
+  RequestHookResultError,
+  RateLimitError
+>;
+type _RequestHookResultErrorIncludesBuiltIn = AssertAssignable<
+  RequestHookResultError,
+  BuiltInRequestError
+>;

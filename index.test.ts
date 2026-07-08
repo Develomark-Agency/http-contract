@@ -301,4 +301,26 @@ describe("global interceptors", () => {
 
     expect(order).toEqual(["onRequest", "fetch", "onResponse"]);
   });
+
+  test("onRequest can abort with Result.err before fetch", async () => {
+    let fetchCalled = false;
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => {
+        fetchCalled = true;
+        return Response.json({});
+      },
+      onRequest: [
+        () => Result.err(new Error("abort before fetch")),
+      ],
+    });
+
+    const result = await api.endpoint("/posts").result();
+
+    expect(result.isErr()).toBe(true);
+    expect(fetchCalled).toBe(false);
+    if (result.isErr()) {
+      expect((result.error as Error).message).toBe("abort before fetch");
+    }
+  });
 });
