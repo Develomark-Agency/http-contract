@@ -53,7 +53,15 @@ export function createEndpoint(state: EndpointState) {
   call.requestHeaders = (schema: StandardSchema) => createEndpoint({ ...state, requestHeadersSchema: schema });
   call.responseHeaders = (schema: StandardSchema) => createEndpoint({ ...state, responseHeadersSchema: schema });
   call.body = (schema: StandardSchema, options?: BodyOptions) => createEndpoint({ ...state, bodySchema: schema, bodySerializer: resolveBodySerializer(options) });
-  call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema }) as unknown as Endpoint<string, string, boolean, unknown, unknown, unknown, unknown, SchemaOutput<typeof schema>, unknown>;
+  call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema }) as unknown as Endpoint<string, string, {
+    methodSet: boolean;
+    path: unknown;
+    query: unknown;
+    body: unknown;
+    headers: unknown;
+    output: SchemaOutput<typeof schema>;
+    errors: unknown;
+  }>;
   call.validate = (validate: EndpointState["validate"]) => createEndpoint({ ...state, validate });
   call.transform = (transform: EndpointState["transform"]) => createEndpoint({ ...state, transform }) as any;
 

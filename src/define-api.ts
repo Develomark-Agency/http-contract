@@ -14,7 +14,15 @@ export function defineApi<const T extends ApiOptions>(options: T) {
         template,
         method: "get",
         methodSet: false
-      }) as unknown as Endpoint<Template, PathParamNames<Template>, false, DefaultPathParams<Template>, never, never, never, unknown, HookErrors>;
+      }) as unknown as Endpoint<Template, PathParamNames<Template>, {
+        methodSet: false;
+        path: DefaultPathParams<Template>;
+        query: never;
+        body: never;
+        headers: never;
+        output: unknown;
+        errors: HookErrors;
+      }>;
     }
   };
 }
