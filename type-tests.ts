@@ -42,6 +42,29 @@ api.endpoint("/users/{userId}/posts/{postId}").path(z.object({ userId: z.string(
 // @ts-expect-error Path schema output values must be URL-stringifiable.
 api.endpoint("/posts/{postId}").path(z.object({ postId: z.object({ bad: z.string() }) }));
 
+refinedPath.url({ path: { postId: 123 } });
+
+// @ts-expect-error .url() path key mismatch.
+refinedPath.url({ path: { id: 123 } });
+
+const optionalQueryUrl = api.endpoint("/posts")
+  .query(z.object({ id: z.number().optional() }));
+
+optionalQueryUrl.url({});
+optionalQueryUrl.url({ query: {} });
+optionalQueryUrl.url({ query: { id: 1 } });
+
+const requiredQueryUrl = api.endpoint("/posts")
+  .query(z.object({ id: z.number() }));
+
+requiredQueryUrl.url({ query: { id: 1 } });
+
+// @ts-expect-error .url() with required query missing query.
+requiredQueryUrl.url({});
+
+// @ts-expect-error .url() with required query missing id.
+requiredQueryUrl.url({ query: {} });
+
 api.endpoint("/posts").method("get");
 api.endpoint("/posts").method("propfind");
 api.endpoint("/posts")({ method: "post", cache: "no-store", signal: new AbortController().signal });

@@ -48,6 +48,16 @@ export function createEndpoint(state: EndpointState) {
   call.validate = (validate: EndpointState["validate"]) => createEndpoint({ ...state, validate });
   call.transform = (transform: EndpointState["transform"]) => createEndpoint({ ...state, transform }) as any;
 
+  call.url = async (args: Record<string, unknown> = {}) => {
+    const path = await validateInput(state.pathSchema, args.path ?? extractDefaultPath(state.template), "path");
+    if (path.isErr()) throw path.error;
+
+    const endpointQuery = await validateInput(state.querySchema, args.query ?? {}, "query");
+    if (endpointQuery.isErr()) throw endpointQuery.error;
+
+    return buildUrl(state, path.value as Record<string, PathParamValue>, endpointQuery.value as QueryInput);
+  };
+
   return call;
 }
 

@@ -108,6 +108,7 @@ export type Endpoint<Template extends string, PathKeys extends string, MethodSet
   (...args: CallParameters<MethodSet, Path, Query, Body, Headers>): Promise<TypedResponse<Output, Errors, "throw">>;
   result(...args: CallParameters<MethodSet, Path, Query, Body, Headers>): Promise<BetterResult<TypedResponse<Output, Errors, "result">, Errors | BuiltInRequestError>>;
   op(...args: CallParameters<MethodSet, Path, Query, Body, Headers>): ProdkitOp<TypedResponse<Output, Errors, "op">, Errors | BuiltInRequestError, []>;
+  url(args: CallArgs<Path, Query, never, never>): Promise<URL>;
   method<M extends HttpMethod>(method: M): Endpoint<Template, PathKeys, true, Path, Query, Body, Headers, Output, Errors>;
   path: [PathKeys] extends [never]
     ? never
