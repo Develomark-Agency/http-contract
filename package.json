@@ -21,7 +21,6 @@
   "dependencies": {
     "@prodkit/op": "^0.2.2",
     "@standard-schema/spec": "^1.1.0",
-    "better-result": "^2.9.2",
-    "zod": "^4.4.3"
+    "better-result": "^2.9.2"
   }
 }
