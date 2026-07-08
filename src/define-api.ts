@@ -1,6 +1,6 @@
 import type { Result as BetterResult } from "better-result";
-import { createEndpoint } from "./endpoint";
 import type { ApiOptions, DefaultPathParams, Endpoint, PathParamNames } from "./types";
+import { createEndpoint } from "./endpoint";
 
 export function defineApi<const T extends ApiOptions>(options: T) {
   type OnRequestErrors = ExtractHookErrors<T["onRequest"]>;

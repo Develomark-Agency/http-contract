@@ -1,4 +1,13 @@
-import type { EndpointState, HeadersInput, PathParamValue, QueryInput, QueryValue, SerializableParamRecord, ValueFactory, MaybePromise } from "./types";
+import type {
+  EndpointState,
+  HeadersInput,
+  PathParamValue,
+  QueryInput,
+  QueryValue,
+  SerializableParamRecord,
+  ValueFactory,
+  MaybePromise
+} from "./types";
 
 export async function buildHeaders(state: EndpointState, endpointHeaders: SerializableParamRecord, hasBody: boolean) {
   const headers: HeadersInput = {};

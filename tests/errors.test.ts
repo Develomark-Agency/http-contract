@@ -1,12 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { Result } from "better-result";
 import z from "zod";
 import {
   defineApi,
   HttpContractAbortError,
   HttpContractFetchError,
   HttpContractJsonParseError,
-  HttpContractSchemaError,
   requestContextKey,
 } from "../index";
 
