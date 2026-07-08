@@ -1,9 +1,17 @@
 {
   "name": "http-contract",
   "version": "0.1.0",
-  "module": "index.ts",
+  "description": "Type-safe HTTP client with a fluent endpoint builder, schema validation, and composable modes. Compatible with `\"better-result\"` and `\"@prodkit/op\".`",
   "type": "module",
-  "private": true,
+  "module": "index.ts",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts",
+      "types": "./index.ts"
+    }
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
