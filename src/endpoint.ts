@@ -25,7 +25,6 @@ import type {
   QueryInput,
   ResponseMode,
   RuntimeContext,
-  SchemaOutput,
   SerializableParamRecord,
   TypedResponse
 } from "../types.js";
@@ -69,10 +68,12 @@ export function createEndpoint(state: EndpointState) {
   call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema }) as unknown as Endpoint<string, string, {
     methodSet: boolean;
     path: unknown;
+    pathOutput: unknown;
     query: unknown;
+    queryOutput: unknown;
     body: unknown;
     headers: unknown;
-    output: SchemaOutput<typeof schema>;
+    output: StandardSchema.InferOutput<typeof schema>;
     errors: unknown;
   }>;
   call.validate = (validate: EndpointState["validate"]) => createEndpoint({ ...state, validate });

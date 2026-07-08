@@ -1,7 +1,6 @@
 import type { Result as BetterResult } from "better-result";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
 
-export type SchemaOutput<T> = T extends StandardSchema<unknown, infer Output> ? Output : never;
 export type CommonHttpMethod = "get" | "post" | "put" | "patch" | "delete";
 export type HttpMethod = CommonHttpMethod | (string & {});
 export type PathParamValue = string | number | boolean | bigint | Date;

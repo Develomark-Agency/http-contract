@@ -125,6 +125,23 @@ describe("query parameters", () => {
       "https://example.com/posts?id=1"
     ]);
   });
+
+  test("accepts query schema input and serializes transformed output", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/posts")
+      .query(z.object({ something: z.string() }).transform(value => ({ s: value.something })))
+      .result({ query: { something: "hello" } });
+
+    expect(urls[0]).toBe("https://example.com/posts?s=hello");
+  });
 });
 
 describe("request options", () => {

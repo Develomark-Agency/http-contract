@@ -129,6 +129,41 @@ requiredQuery({});
 
 requiredQuery({ query: { id: 1 } });
 
+const transformedQuery = api.endpoint("/posts")
+  .query(z.object({ something: z.string() }).transform(value => ({ s: value.something })));
+
+transformedQuery({ query: { something: "hello" } });
+transformedQuery.url({ query: { something: "hello" } });
+
+// @ts-expect-error Callsites use schema input, not transformed output.
+transformedQuery({ query: { s: "hello" } });
+
+transformedQuery.validate(ctx => {
+  const s: string = ctx.query.s;
+  // @ts-expect-error Validation context uses schema output.
+  ctx.query.something;
+});
+
+const transformedPath = api.endpoint("/posts/{postId}")
+  .path(z.object({ postId: z.string() }).transform(value => ({ postId: Number(value.postId) })));
+
+transformedPath({ path: { postId: "123" } });
+
+// @ts-expect-error Callsites use path schema input.
+transformedPath({ path: { postId: 123 } });
+
+transformedPath.validate(ctx => {
+  const postId: number = ctx.path.postId;
+});
+
+const transformedBody = api.endpoint("/posts")
+  .body(z.object({ raw: z.string() }).transform(value => ({ parsed: Number(value.raw) })));
+
+transformedBody({ body: { raw: "123" } });
+
+// @ts-expect-error Callsites use body schema input.
+transformedBody({ body: { parsed: 123 } });
+
 // @ts-expect-error Request header schema output must be a serializable record.
 api.endpoint("/posts").requestHeaders(z.number());
 

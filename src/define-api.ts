@@ -17,7 +17,9 @@ export function defineApi<const T extends ApiOptions>(options: T) {
       }) as unknown as Endpoint<Template, PathParamNames<Template>, {
         methodSet: false;
         path: DefaultPathParams<Template>;
+        pathOutput: DefaultPathParams<Template>;
         query: never;
+        queryOutput: never;
         body: never;
         headers: never;
         output: unknown;

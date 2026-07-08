@@ -3,7 +3,6 @@ import type { Result as BetterResult } from "better-result";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
 import type { BuiltInBodyError, BuiltInRequestError } from "./errors.js";
 
-export type SchemaOutput<T> = T extends StandardSchema<unknown, infer Output> ? Output : never;
 export type CommonHttpMethod = "get" | "post" | "put" | "patch" | "delete";
 export type HttpMethod = CommonHttpMethod | (string & {});
 export type PathParamValue = string | number | boolean | bigint | Date;
@@ -137,7 +136,9 @@ export type TypedResponse<Output, Errors, Mode extends ResponseMode = "throw"> =
 export type EndpointConfig = {
   methodSet: boolean;
   path: unknown;
+  pathOutput: unknown;
   query: unknown;
+  queryOutput: unknown;
   body: unknown;
   headers: unknown;
   output: unknown;
@@ -146,6 +147,18 @@ export type EndpointConfig = {
 
 type Amend<Config extends EndpointConfig, Key extends keyof EndpointConfig, Value> =
   Omit<Config, Key> & Record<Key, Value>;
+type AmendPath<Config extends EndpointConfig, S extends StandardSchema> =
+  Omit<Config, "path" | "pathOutput"> & {
+    path: StandardSchema.InferInput<S>;
+    pathOutput: StandardSchema.InferOutput<S>;
+  };
+type AmendQuery<Config extends EndpointConfig, S extends StandardSchema> =
+  Omit<Config, "query" | "queryOutput"> & {
+    query: StandardSchema.InferInput<S>;
+    queryOutput: StandardSchema.InferOutput<S>;
+  };
+type SchemaWithOutputArgs<S extends StandardSchema, Output> =
+  StandardSchema.InferOutput<S> extends Output ? [schema: S] : [schema: never];
 
 type UrlParameters<Path = never, Query = never> =
   object extends CallArgs<Path, Query, never, never>
@@ -165,20 +178,20 @@ export type Endpoint<Template extends string, PathKeys extends string, Config ex
   method<M extends HttpMethod>(method: M): Endpoint<Template, PathKeys, Amend<Config, "methodSet", true>>;
   path: [PathKeys] extends [never]
     ? never
-    : <S extends StandardSchema<unknown, PathSchemaOutput<PathKeys>>>(schema: S) => Endpoint<Template, PathKeys, Amend<Config, "path", SchemaOutput<S>>>;
-  query<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "query", SchemaOutput<S>>>;
-  requestHeaders<S extends StandardSchema<unknown, SerializableParamRecord>>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "headers", SchemaOutput<S>>>;
+    : <S extends StandardSchema>(...args: SchemaWithOutputArgs<S, PathSchemaOutput<PathKeys>>) => Endpoint<Template, PathKeys, AmendPath<Config, S>>;
+  query<S extends StandardSchema>(...args: SchemaWithOutputArgs<S, SerializableParamRecord>): Endpoint<Template, PathKeys, AmendQuery<Config, S>>;
+  requestHeaders<S extends StandardSchema>(...args: SchemaWithOutputArgs<S, SerializableParamRecord>): Endpoint<Template, PathKeys, Amend<Config, "headers", StandardSchema.InferInput<S>>>;
   responseHeaders<S extends StandardSchema<SerializableParamRecord, unknown>>(schema: S): Endpoint<Template, PathKeys, Config>;
-  body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, Amend<Config, "body", SchemaOutput<S>>>;
-  output<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "output", SchemaOutput<S>>>;
-  validate<F extends (ctx: RuntimeContext & {
-    path: [Config["path"]] extends [never] ? Record<string, PathParamValue> : Config["path"];
-    query: [Config["query"]] extends [never] ? QueryInput : Config["query"];
+  body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, Amend<Config, "body", StandardSchema.InferInput<S>>>;
+  output<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "output", StandardSchema.InferOutput<S>>>;
+  validate<F extends (ctx: Omit<RuntimeContext, "path" | "query" | "headers"> & {
+    path: [Config["pathOutput"]] extends [never] ? Record<string, PathParamValue> : Config["pathOutput"];
+    query: [Config["queryOutput"]] extends [never] ? QueryInput : Config["queryOutput"];
     headers: [Config["headers"]] extends [never] ? HeadersInput : Config["headers"];
   }) => ValidateReturn>(fn: F): Endpoint<Template, PathKeys, Amend<Config, "errors", Config["errors"] | ValidateError<ReturnType<F>>>>;
-  transform<F extends (ctx: RuntimeContext & {
-    path: [Config["path"]] extends [never] ? Record<string, PathParamValue> : Config["path"];
-    query: [Config["query"]] extends [never] ? QueryInput : Config["query"];
+  transform<F extends (ctx: Omit<RuntimeContext, "path" | "query" | "headers"> & {
+    path: [Config["pathOutput"]] extends [never] ? Record<string, PathParamValue> : Config["pathOutput"];
+    query: [Config["queryOutput"]] extends [never] ? QueryInput : Config["queryOutput"];
     headers: [Config["headers"]] extends [never] ? HeadersInput : Config["headers"];
     value: Config["output"];
   }) => ValidateReturn>(fn: F): Endpoint<Template, PathKeys, Omit<Config, "output" | "errors"> & {
