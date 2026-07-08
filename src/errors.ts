@@ -3,19 +3,46 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 export class HttpContractFetchError extends TaggedError("HttpContractFetchError")<{
   cause: unknown;
-}>() {}
+  message: string;
+}>() {
+  constructor(args: { cause: unknown }) {
+    const message = `Fetch failed: ${getErrorMessage(args.cause)}`;
+    super({ ...args, message });
+  }
+}
 
 export class HttpContractAbortError extends TaggedError("HttpContractAbortError")<{
   cause: unknown;
-}>() {}
+  message: string;
+}>() {
+  constructor(args: { cause: unknown }) {
+    const message = `Request aborted: ${getErrorMessage(args.cause)}`;
+    super({ ...args, message });
+  }
+}
 
 export class HttpContractRequestBuildError extends TaggedError("HttpContractRequestBuildError")<{
   cause: unknown;
-}>() {}
+  message: string;
+}>() {
+  constructor(args: { cause: unknown }) {
+    const message = `Failed to build request: ${getErrorMessage(args.cause)}`;
+    super({ ...args, message });
+  }
+}
 
 export class HttpContractSchemaError extends TaggedError("HttpContractSchemaError")<{
   issues: ReadonlyArray<StandardSchemaV1.Issue>;
-}>() {}
+  message: string;
+}>() {
+  constructor(args: { issues: ReadonlyArray<StandardSchemaV1.Issue> }) {
+    const firstMsg = args.issues[0]?.message ?? "Schema validation failed";
+    const message = args.issues.length > 1
+      ? `${firstMsg} (+${args.issues.length - 1} more issues)`
+      : firstMsg;
+    super({ ...args, message });
+  }
+}
 
 export type RequestContext = {
   method: string;
@@ -32,11 +59,23 @@ export function attachRequestContext(error: unknown, ctx: RequestContext): void 
 
 export class HttpContractJsonParseError extends TaggedError("HttpContractJsonParseError")<{
   cause: unknown;
-}>() {}
+  message: string;
+}>() {
+  constructor(args: { cause: unknown }) {
+    const message = `Failed to parse JSON response: ${getErrorMessage(args.cause)}`;
+    super({ ...args, message });
+  }
+}
 
 export class HttpContractBodyReadError extends TaggedError("HttpContractBodyReadError")<{
   cause: unknown;
-}>() {}
+  message: string;
+}>() {
+  constructor(args: { cause: unknown }) {
+    const message = `Failed to read response body: ${getErrorMessage(args.cause)}`;
+    super({ ...args, message });
+  }
+}
 
 export type BuiltInRequestError =
   | HttpContractRequestBuildError
