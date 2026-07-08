@@ -1,6 +1,6 @@
 import { Op } from "@prodkit/op";
 import { Result, type Result as BetterResult } from "better-result";
-import { HttpContractRequestBuildError, toFetchError } from "./errors";
+import { attachRequestContext, HttpContractRequestBuildError, toFetchError, type RequestContext } from "./errors";
 import { createTypedResponse } from "./response";
 import { normalizeHookResult } from "./result-utils";
 import { validateInput } from "./schema";
@@ -17,6 +17,7 @@ import type {
   PathParamValue,
   QueryInput,
   ResponseMode,
+  RuntimeContext,
   SchemaOutput,
   SerializableParamRecord,
   TypedResponse
@@ -76,17 +77,21 @@ export function createEndpoint(state: EndpointState) {
 
 async function execute(state: EndpointState, args: Record<string, unknown>, mode: ResponseMode) {
   const fetchImpl = state.api.fetch ?? globalThis.fetch;
+  const requestOptions = getRequestOptions(args);
+  const method = (state.methodSet ? state.method : (requestOptions.method ?? state.method)).toUpperCase();
+  const requestCtx: RequestContext = { method, url: state.template };
+
   const path = await validateInput(state.pathSchema, args.path ?? extractDefaultPath(state.template), "path");
-  if (path.isErr()) return path;
+  if (path.isErr()) { attachRequestContext(path.error, requestCtx); return path; }
 
   const endpointQuery = await validateInput(state.querySchema, args.query ?? {}, "query");
-  if (endpointQuery.isErr()) return endpointQuery;
+  if (endpointQuery.isErr()) { attachRequestContext(endpointQuery.error, requestCtx); return endpointQuery; }
 
   const endpointHeaders = await validateInput(state.requestHeadersSchema, args.headers ?? {}, "headers");
-  if (endpointHeaders.isErr()) return endpointHeaders;
+  if (endpointHeaders.isErr()) { attachRequestContext(endpointHeaders.error, requestCtx); return endpointHeaders; }
 
   const body = await validateInput(state.bodySchema, args.body, "body");
-  if (body.isErr()) return body;
+  if (body.isErr()) { attachRequestContext(body.error, requestCtx); return body; }
 
   let url: URL;
   let headers: HeadersInput;
@@ -94,11 +99,10 @@ async function execute(state: EndpointState, args: Record<string, unknown>, mode
   try {
     url = await buildUrl(state, path.value as Record<string, PathParamValue>, endpointQuery.value as QueryInput);
     headers = await buildHeaders(state, endpointHeaders.value as SerializableParamRecord, state.bodySchema !== undefined);
-    const requestOptions = getRequestOptions(args);
-    const method = state.methodSet ? state.method : (requestOptions.method ?? state.method);
+    requestCtx.url = url.toString();
     init = {
       ...requestOptions,
-      method: method.toUpperCase(),
+      method,
       headers
     };
 
@@ -107,39 +111,45 @@ async function execute(state: EndpointState, args: Record<string, unknown>, mode
       init.body = serialize(body.value) as any;
     }
   } catch (cause) {
-    return Result.err(new HttpContractRequestBuildError({ cause }));
+    const err = new HttpContractRequestBuildError({ cause });
+    attachRequestContext(err, requestCtx);
+    return Result.err(err);
   }
 
   for (const hook of state.api.onRequest ?? []) {
     const hookResult = normalizeHookResult(await hook({ url, init }));
-    if (hookResult.isErr()) return hookResult;
+    if (hookResult.isErr()) { attachRequestContext(hookResult.error, requestCtx); return hookResult; }
   }
 
   let res: Response;
   try {
     res = await fetchImpl(url, init);
   } catch (cause) {
-    return Result.err(toFetchError(cause));
+    const err = toFetchError(cause);
+    attachRequestContext(err, requestCtx);
+    return Result.err(err);
   }
 
   for (const hook of state.api.onResponse ?? []) {
     const hookResult = normalizeHookResult(await hook({ res, url, init }));
-    if (hookResult.isErr()) return hookResult;
+    if (hookResult.isErr()) { attachRequestContext(hookResult.error, requestCtx); return hookResult; }
   }
 
   const responseHeaders = await validateInput(state.responseHeadersSchema, headersToRecord(res.headers), "responseHeaders");
-  if (responseHeaders.isErr()) return responseHeaders;
+  if (responseHeaders.isErr()) { attachRequestContext(responseHeaders.error, requestCtx); return responseHeaders; }
 
-  const ctx = {
+  const ctx: RuntimeContext = {
     res,
     path: path.value as Record<string, PathParamValue>,
     query: endpointQuery.value as QueryInput,
-    headers
+    headers,
+    method,
+    url
   };
 
   if (state.validate) {
     const validation = normalizeHookResult(await state.validate(ctx));
-    if (validation.isErr()) return validation;
+    if (validation.isErr()) { attachRequestContext(validation.error, requestCtx); return validation; }
   }
 
   return Result.ok(createTypedResponse(state, res, ctx, mode));

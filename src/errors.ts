@@ -17,6 +17,19 @@ export class HttpContractSchemaError extends TaggedError("HttpContractSchemaErro
   issues: ReadonlyArray<StandardSchemaV1.Issue>;
 }>() {}
 
+export type RequestContext = {
+  method: string;
+  url: string;
+};
+
+export const requestContextKey = Symbol("@http-contract:request_context");
+
+export function attachRequestContext(error: unknown, ctx: RequestContext): void {
+  if (typeof error === "object" && error !== null) {
+    (error as Record<symbol, unknown>)[requestContextKey] = ctx;
+  }
+}
+
 export class HttpContractJsonParseError extends TaggedError("HttpContractJsonParseError")<{
   cause: unknown;
 }>() {}

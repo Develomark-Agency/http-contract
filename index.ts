@@ -5,6 +5,8 @@ export {
   HttpContractFetchError,
   HttpContractJsonParseError,
   HttpContractRequestBuildError,
-  HttpContractSchemaError
+  HttpContractSchemaError,
+  requestContextKey
 } from "./src/errors";
 export type { TypedResponse } from "./src/types";
+export type { RequestContext } from "./src/errors";

@@ -81,6 +81,8 @@ export type RuntimeContext = {
   path: Record<string, PathParamValue>;
   query: QueryInput;
   headers: HeadersInput;
+  method: string;
+  url: URL;
 };
 
 type RequiredKeys<T> = T extends object
