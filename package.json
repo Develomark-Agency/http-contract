@@ -10,6 +10,14 @@
     ".": {
       "import": "./index.ts",
       "types": "./index.ts"
+    },
+    "./errors": {
+      "import": "./errors.ts",
+      "types": "./errors.ts"
+    },
+    "./types": {
+      "import": "./types.ts",
+      "types": "./types.ts"
     }
   },
   "devDependencies": {
