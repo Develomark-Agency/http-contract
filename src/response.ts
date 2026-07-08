@@ -1,9 +1,9 @@
 import { Op } from "@prodkit/op";
 import { Result, type Result as BetterResult } from "better-result";
-import { attachRequestContext, attachResponseContext, toBodyError, type RequestContext, type ResponseContext } from "./errors";
-import { normalizeTransformResult } from "./result-utils";
-import { validateInput } from "./schema";
-import type { EndpointState, ResponseMode, RuntimeContext } from "./types";
+import { attachRequestContext, attachResponseContext, toBodyError, type RequestContext, type ResponseContext } from "../errors.js";
+import { normalizeTransformResult } from "./result-utils.js";
+import { validateInput } from "./schema.js";
+import type { EndpointState, ResponseMode, RuntimeContext } from "../types.js";
 
 type BodyReaderRuntime = {
   kind: "json" | "body";

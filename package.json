@@ -3,30 +3,29 @@
   "version": "0.1.0",
   "description": "Type-safe HTTP client with a fluent endpoint builder, schema validation, and composable modes. Compatible with `\"better-result\"` and `\"@prodkit/op\".`",
   "type": "module",
-  "module": "dist/index.mjs",
-  "main": "dist/index.mjs",
-  "types": "dist/index.d.mts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "types": "./dist/index.d.mts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./errors": {
-      "import": "./dist/errors.mjs",
-      "types": "./dist/errors.d.mts"
+      "import": "./dist/errors.js",
+      "types": "./dist/errors.d.ts"
     },
     "./types": {
-      "import": "./dist/types.mjs",
-      "types": "./dist/types.d.mts"
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     }
   },
   "scripts": {
-    "build": "tsdown",
-    "prepare": "tsdown"
+    "build": "tsc",
+    "prepare": "tsc"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "tsdown": "^0.22.4"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "typescript": "^6"

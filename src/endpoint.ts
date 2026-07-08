@@ -1,9 +1,9 @@
 import { Op } from "@prodkit/op";
 import { Result, type Result as BetterResult } from "better-result";
-import { createTypedResponse } from "./response";
-import { normalizeHookResult } from "./result-utils";
-import { validateInput } from "./schema";
-import { buildHeaders, buildUrl, extractDefaultPath, hasPathParams } from "./url";
+import { createTypedResponse } from "./response.js";
+import { normalizeHookResult } from "./result-utils.js";
+import { validateInput } from "./schema.js";
+import { buildHeaders, buildUrl, extractDefaultPath, hasPathParams } from "./url.js";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
 import {
   attachRequestContext,
@@ -12,7 +12,7 @@ import {
   toFetchError,
   type RequestContext,
   type ResponseContext
-} from "./errors";
+} from "../errors.js";
 import type {
   BodyKind,
   BodyOptions,
@@ -28,7 +28,7 @@ import type {
   SchemaOutput,
   SerializableParamRecord,
   TypedResponse
-} from "./types";
+} from "../types.js";
 
 export function createEndpoint(state: EndpointState) {
   const call = (async (args: Record<string, unknown> = {}) => {
