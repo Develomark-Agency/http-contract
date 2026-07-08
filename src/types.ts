@@ -30,7 +30,7 @@ type CallRequestOptions<MethodSet extends boolean> =
   (MethodSet extends true ? { method?: never } : { method?: HttpMethod });
 
 export type ApiOptions = {
-  baseUrl: string;
+  baseUrl: ValueFactory<string>;
   fetch?: FetchLike;
   headers?: Record<string, ValueFactory<string>>;
   query?: Record<string, ValueFactory<QueryValue>>;
