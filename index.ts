@@ -26,6 +26,7 @@ export function defineApi<const T extends ApiOptions>(options: T) {
     }
   };
 }
+export default defineApi;
 
 type ExtractHookErrors<T> =
   T extends readonly unknown[]
