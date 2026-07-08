@@ -6,7 +6,7 @@ Type-safe HTTP client with a fluent endpoint builder, schema validation, and thr
 const api = defineApi({ baseUrl: "https://api.example.com" });
 
 const getUser = api.endpoint("/users/{id}")
-  .path(z.object({ id: z.number() }))
+  .path(z.object({ id: z.number() })) // optional, uses `{ id: PathParamValue }` by default
   .output(z.object({ name: z.string(), email: z.string() }));
 
 const res = await getUser({ path: { id: 1 } });
@@ -16,20 +16,14 @@ const user = await res.json();
 
 ## Installation
 
-```sh
-npm install http-contract
-```
+Use [`bun add`](https://bun.com/docs/guides/install/add-git) to add this GitHub repository
 
-Requires `typescript@^5` and a standard schema library such as Zod.
+Validation requires a [Standard Schema](https://standardschema.dev/)-compatible library, such as [Zod](https://zod.dev/) or [ArkType](https://arktype.io/).
 
-```sh
-npm install zod
-```
+`http-contract` is built on two libraries that surface through its API:
 
-http-contract is built on two libraries that surface through its API:
-
-- **better-result** -- Every fallible operation returns a `Result<T, E>` type instead of throwing. The `.result()` calling mode, `.validate()`, and `.transform()` all use `Result` from this library.
-- **@prodkit/op** -- The `.op()` calling mode returns composable `Op` values that can be combined, retried, and run lazily via `Op.run()`.
+- [**better-result**](https://better-result.dev/) -- Every fallible operation returns a `Result<T, E>` type instead of throwing. The `.result()` calling mode, `.validate()`, and `.transform()` all use `Result` from this library.
+- [**@prodkit/op**](https://github.com/trvswgnr/prodkit/tree/main/packages/op) -- The `.op()` calling mode returns composable `Op` values that can be combined, retried, and run lazily via `Op.run()`.
 
 You do not need to install these separately; they ship as dependencies of http-contract.
 
@@ -70,6 +64,7 @@ const getPost = api.endpoint("/posts/{postId}")
 ```
 
 The `{postId}` template is extracted automatically. Calling `.path(schema)` validates and narrows the input.
+If `.path(schema)` is not provided, it's typed as `Record<Param, PathParamValue>`, such as `{ postId: PathParamValue }`
 
 ### Query parameters
 
@@ -134,7 +129,7 @@ Throws on network failure, schema validation failure, or any error produced by `
 
 ### Result mode
 
-Every fallible step returns a `Result<T, E>` from the `better-result` library. Instead of throwing, you inspect the result with `.isErr()` or `.isOk()` and access `.value` or `.error`.
+Every fallible step returns a `Result<T, E>` from the [`better-result`](https://better-result.dev/) library. Instead of throwing, you inspect the result with `.isErr()` or `.isOk()` and access `.value` or `.error`.
 
 ```ts
 import { Result } from "better-result";
@@ -152,7 +147,7 @@ Error types from hooks and schemas are unioned into the `E` type parameter autom
 
 ### Op mode
 
-The `.op()` method returns an `Op` from `@prodkit/op`. Ops are composable, lazy values -- you build a computation graph by combining Ops, then run it with `Op.run()` to produce a `Result`.
+The `.op()` method returns an `Op` from [`@prodkit/op`](https://github.com/trvswgnr/prodkit/tree/main/packages/op). Ops are composable, lazy values -- you build a computation graph by combining Ops, then run it with `Op.run()` to produce a `Result`.
 
 ```ts
 import { Op } from "@prodkit/op";
@@ -211,7 +206,7 @@ If a serializer provides a `contentType`, it is set as the `Content-Type` header
 
 ## Validate Hook
 
-Runs after the response is received but before the body is read. Use it for status-code checks or early short-circuits. Returns a `Result` from `better-result`.
+Runs after the response is received but before the body is read. Use it for status-code checks or early short-circuits. Returns a `Result` from [`better-result`](https://better-result.dev/).
 
 ```ts
 import { Result } from "better-result";
@@ -229,7 +224,7 @@ The context includes `res`, `path`, `query`, and `headers` (based on what was de
 
 ## Transform Hook
 
-Runs after the body is parsed and validated against `.output(schema)`. Use it to map or enrich the response value. Returns a `Result` from `better-result`.
+Runs after the body is parsed and validated against `.output(schema)`. Use it to map or enrich the response value. Returns a `Result` from [`better-result`](https://better-result.dev/).
 
 ```ts
 import { Result } from "better-result";
@@ -255,7 +250,7 @@ const opUrl = await getPost.op.url({ path: { postId: 1 } }).run();
 
 ## Global Interceptors
 
-Requests and responses can be intercepted through `onRequest` and `onResponse` hooks on the API definition. Return `Result.err(E)` from `better-result` to abort the request.
+Requests and responses can be intercepted through `onRequest` and `onResponse` hooks on the API definition. Return `Result.err(E)` from [`better-result`](https://better-result.dev/) to abort the request.
 
 ```ts
 import { Result } from "better-result";
