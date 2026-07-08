@@ -60,6 +60,50 @@ describe("default errors", () => {
   });
 });
 
+describe(".url methods", () => {
+  test("result.url returns the constructed URL as a Result", async () => {
+    const api = defineApi({ baseUrl: "https://example.com" });
+
+    const endpoint = api.endpoint("/posts/{postId}")
+      .path(z.object({ postId: z.number() }));
+
+    const result = await endpoint.result.url({ path: { postId: 5 } });
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.href).toBe("https://example.com/posts/5");
+    }
+  });
+
+  test("result.url returns schema errors as a Result", async () => {
+    const api = defineApi({ baseUrl: "https://example.com" });
+
+    const endpoint = api.endpoint("/posts/{postId}")
+      .path(z.object({ postId: z.number() }));
+
+    const result = await endpoint.result.url({ path: { postId: "not-a-number" as any } });
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(HttpContractSchemaError);
+    }
+  });
+
+  test("result.url includes base API query params", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      query: { apiKey: "secret" }
+    });
+
+    const result = await api.endpoint("/posts").result.url({});
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.href).toBe("https://example.com/posts?apiKey=secret");
+    }
+  });
+});
+
 describe("optional query args", () => {
   test("allows omitting args when query fields are optional", async () => {
     const urls: string[] = [];

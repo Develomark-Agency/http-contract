@@ -65,6 +65,20 @@ requiredQueryUrl.url({});
 // @ts-expect-error .url() with required query missing id.
 requiredQueryUrl.url({ query: {} });
 
+refinedPath.result.url({ path: { postId: 123 } });
+refinedPath.op.url({ path: { postId: 123 } });
+
+// @ts-expect-error .result.url() path key mismatch.
+refinedPath.result.url({ path: { id: 123 } });
+
+optionalQueryUrl.result.url({});
+optionalQueryUrl.op.url({});
+optionalQueryUrl.result.url({ query: { id: 1 } });
+optionalQueryUrl.op.url({ query: { id: 1 } });
+
+// @ts-expect-error .result.url() with required query missing id.
+requiredQueryUrl.result.url({ query: {} });
+
 api.endpoint("/posts").method("get");
 api.endpoint("/posts").method("propfind");
 api.endpoint("/posts")({ method: "post", cache: "no-store", signal: new AbortController().signal });

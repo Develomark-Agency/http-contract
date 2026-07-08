@@ -106,8 +106,14 @@ export type TypedResponse<Output, Errors, Mode extends ResponseMode = "throw"> =
 
 export type Endpoint<Template extends string, PathKeys extends string, MethodSet extends boolean, Path, Query, Body, Headers, Output, Errors> = {
   (...args: CallParameters<MethodSet, Path, Query, Body, Headers>): Promise<TypedResponse<Output, Errors, "throw">>;
-  result(...args: CallParameters<MethodSet, Path, Query, Body, Headers>): Promise<BetterResult<TypedResponse<Output, Errors, "result">, Errors | BuiltInRequestError>>;
-  op(...args: CallParameters<MethodSet, Path, Query, Body, Headers>): ProdkitOp<TypedResponse<Output, Errors, "op">, Errors | BuiltInRequestError, []>;
+  result: {
+    (...args: CallParameters<MethodSet, Path, Query, Body, Headers>): Promise<BetterResult<TypedResponse<Output, Errors, "result">, Errors | BuiltInRequestError>>;
+    url(args: CallArgs<Path, Query, never, never>): Promise<BetterResult<URL, BuiltInRequestError>>;
+  };
+  op: {
+    (...args: CallParameters<MethodSet, Path, Query, Body, Headers>): ProdkitOp<TypedResponse<Output, Errors, "op">, Errors | BuiltInRequestError, []>;
+    url(args: CallArgs<Path, Query, never, never>): ProdkitOp<URL, BuiltInRequestError, []>;
+  };
   url(args: CallArgs<Path, Query, never, never>): Promise<URL>;
   method<M extends HttpMethod>(method: M): Endpoint<Template, PathKeys, true, Path, Query, Body, Headers, Output, Errors>;
   path: [PathKeys] extends [never]

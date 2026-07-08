@@ -27,10 +27,16 @@ export function createEndpoint(state: EndpointState) {
   }) as any;
 
   call.result = (args: Record<string, unknown> = {}) => execute(state, args, "result") as unknown as Promise<BetterResult<TypedResponse<unknown, unknown, "result">, unknown>>;
+  call.result.url = (args: Record<string, unknown> = {}) => buildUrlResult(state, args) as unknown as Promise<BetterResult<URL, unknown>>;
   call.op = (args: Record<string, unknown> = {}) => Op.try(async () => {
     const result = await execute(state, args, "op");
     if (result.isErr()) throw result.error;
     return result.value as unknown as TypedResponse<unknown, unknown, "op">;
+  }, error => error);
+  call.op.url = (args: Record<string, unknown> = {}) => Op.try(async () => {
+    const result = await buildUrlResult(state, args);
+    if (result.isErr()) throw result.error;
+    return result.value;
   }, error => error);
 
   call.method = (method: HttpMethod) => createEndpoint({ ...state, method, methodSet: true });
@@ -49,13 +55,9 @@ export function createEndpoint(state: EndpointState) {
   call.transform = (transform: EndpointState["transform"]) => createEndpoint({ ...state, transform }) as any;
 
   call.url = async (args: Record<string, unknown> = {}) => {
-    const path = await validateInput(state.pathSchema, args.path ?? extractDefaultPath(state.template), "path");
-    if (path.isErr()) throw path.error;
-
-    const endpointQuery = await validateInput(state.querySchema, args.query ?? {}, "query");
-    if (endpointQuery.isErr()) throw endpointQuery.error;
-
-    return buildUrl(state, path.value as Record<string, PathParamValue>, endpointQuery.value as QueryInput);
+    const result = await buildUrlResult(state, args);
+    if (result.isErr()) throw result.error;
+    return result.value;
   };
 
   return call;
@@ -127,6 +129,20 @@ function headersToRecord(headers: Headers) {
     record[key] = value;
   }
   return record;
+}
+
+async function buildUrlResult(state: EndpointState, args: Record<string, unknown>) {
+  const pathResult = await validateInput(state.pathSchema, args.path ?? extractDefaultPath(state.template), "path");
+  if (pathResult.isErr()) return pathResult;
+
+  const queryResult = await validateInput(state.querySchema, args.query ?? {}, "query");
+  if (queryResult.isErr()) return queryResult;
+
+  try {
+    return Result.ok(await buildUrl(state, pathResult.value as Record<string, PathParamValue>, queryResult.value as QueryInput));
+  } catch (cause) {
+    return Result.err(new HttpContractRequestBuildError({ cause }));
+  }
 }
 
 function getRequestOptions(args: Record<string, unknown>) {
