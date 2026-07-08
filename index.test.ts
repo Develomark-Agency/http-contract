@@ -480,3 +480,390 @@ describe("body serialization", () => {
     expect((seen[0]?.headers as Record<string, string>)?.["Content-Type"]).toBe("application/vnd.api+json");
   });
 });
+
+describe(".validate()", () => {
+  test("validate can abort with Result.err on non-2xx status", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response("not found", { status: 404 }),
+    });
+
+    const result = await api.endpoint("/posts")
+      .validate((ctx) => {
+        if (ctx.res.status === 404) return Result.err(new Error("resource not found"));
+      }).result();
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect((result.error as Error).message).toBe("resource not found");
+    }
+  });
+
+  test("validate allows passing through when returning void", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ id: 1 }),
+    });
+
+    const result = await api.endpoint("/posts")
+      .validate(() => {}).result();
+
+    expect(result.isOk()).toBe(true);
+  });
+
+  test("validate receives path, query, and headers context", async () => {
+    const ctxSeen: unknown[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({}),
+    });
+
+    await api.endpoint("/posts/{id}")
+      .path(z.object({ id: z.string() }))
+      .query(z.object({ filter: z.string() }))
+      .requestHeaders(z.object({ "x-trace": z.string() }))
+      .validate((ctx) => { ctxSeen.push(ctx); })
+      .result({ path: { id: "42" }, query: { filter: "all" }, headers: { "x-trace": "abc" } });
+
+    expect(ctxSeen).toHaveLength(1);
+    const ctx = ctxSeen[0] as Record<string, unknown>;
+    expect(ctx).toHaveProperty("path");
+    expect(ctx).toHaveProperty("query");
+    expect(ctx).toHaveProperty("headers");
+    expect(ctx).toHaveProperty("res");
+  });
+});
+
+describe(".transform()", () => {
+  test("transform replaces the output value", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ name: "Alice", age: 30 }),
+    });
+
+    const result = await api.endpoint("/users")
+      .output(z.object({ name: z.string(), age: z.number() }))
+      .transform((ctx) => ({ greeting: `Hello, ${ctx.value.name}`, years: ctx.value.age }))
+      .result();
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      const value = await result.value.json();
+      expect(value.isOk()).toBe(true);
+      if (value.isOk()) {
+        expect(value.value).toEqual({ greeting: "Hello, Alice", years: 30 });
+      }
+    }
+  });
+
+  test("transform can abort with Result.err", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ role: "guest" }),
+    });
+
+    const res = await api.endpoint("/users")
+      .output(z.object({ role: z.string() }))
+      .transform((ctx) => {
+        if (ctx.value.role === "guest") return Result.err(new Error("guests not allowed"));
+      }).result();
+
+    expect(res.isOk()).toBe(true);
+    if (!res.isOk()) throw res.error;
+    const bodyResult = await (res.value as any).json();
+    expect(bodyResult.isErr()).toBe(true);
+    expect(bodyResult.error.message).toBe("guests not allowed");
+  });
+});
+
+describe(".op() mode", () => {
+  test("op returns a ProdkitOp and resolves on success", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ ok: true }),
+    });
+
+    const op = api.endpoint("/posts").output(z.object({ ok: z.boolean() })).op();
+
+    const result = await op.run();
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      const value = await result.value.json().run();
+      expect(value.isOk()).toBe(true);
+      if (value.isOk()) {
+        expect(value.value).toEqual({ ok: true });
+      }
+    }
+  });
+
+  test("op.run returns error on fetch failure", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => { throw new Error("network down"); },
+    });
+
+    const op = api.endpoint("/posts").op();
+    const result = await op.run();
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(HttpContractFetchError);
+    }
+  });
+});
+
+describe("path parameters", () => {
+  test("interpolates multiple path parameters", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/users/{userId}/posts/{postId}")
+      .path(z.object({ userId: z.number(), postId: z.number() }))
+      .result({ path: { userId: 1, postId: 99 } });
+
+    expect(urls[0]).toBe("https://example.com/users/1/posts/99");
+  });
+
+  test("encodes special characters in path params", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/search/{query}")
+      .path(z.object({ query: z.string() }))
+      .result({ path: { query: "hello world/foo" } });
+
+    expect(urls[0]).toBe("https://example.com/search/hello%20world%2Ffoo");
+  });
+
+  test("boolean path param is stringified", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/items/{flag}")
+      .path(z.object({ flag: z.boolean() }))
+      .result({ path: { flag: true } });
+
+    expect(urls[0]).toBe("https://example.com/items/true");
+  });
+});
+
+describe("query parameters", () => {
+  test("sends array query params as repeated keys", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/posts")
+      .query(z.object({ id: z.array(z.number()) }))
+      .result({ query: { id: [1, 2, 3] } });
+
+    expect(urls[0]).toBe("https://example.com/posts?id=1&id=2&id=3");
+  });
+
+  test("skips undefined query values", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/posts")
+      .query(z.object({ a: z.string().optional(), b: z.string() }))
+      .result({ query: { b: "keep" } });
+
+    expect(urls[0]).toBe("https://example.com/posts?b=keep");
+  });
+});
+
+describe("value factories", () => {
+  test("async baseUrl function", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: async () => "https://api.example.com/v2",
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/users").result();
+    expect(urls[0]).toBe("https://api.example.com/v2/users");
+  });
+
+  test("function-based query values", async () => {
+    const urls: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      query: { ts: () => "12345" },
+      fetch: async input => {
+        urls.push(String(input));
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/posts").result();
+    expect(urls[0]).toBe("https://example.com/posts?ts=12345");
+  });
+
+  test("function-based header values", async () => {
+    const seen: RequestInit[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      headers: { Authorization: async () => "Bearer tok_xyz" },
+      fetch: async (_input, init) => {
+        seen.push(init ?? {});
+        return Response.json({});
+      },
+    });
+
+    await api.endpoint("/posts").result();
+    expect((seen[0]?.headers as Record<string, string>)?.["Authorization"]).toBe("Bearer tok_xyz");
+  });
+});
+
+describe("body reader modes", () => {
+  test("reads response as text", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response("plain text response"),
+    });
+
+    const response = await api.endpoint("/doc").output(z.unknown()).result();
+    expect(response.isOk()).toBe(true);
+    if (response.isErr()) return;
+
+    const bodyResult = await response.value.text();
+    expect(bodyResult.isOk()).toBe(true);
+    if (bodyResult.isOk()) {
+      expect(bodyResult.value).toBe("plain text response");
+    }
+  });
+
+  test("reads response as blob", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response(new Blob(["blob data"])),
+    });
+
+    const response = await api.endpoint("/doc").output(z.unknown()).result();
+    expect(response.isOk()).toBe(true);
+    if (response.isErr()) return;
+
+    const blobResult = await response.value.blob();
+    expect(blobResult.isOk()).toBe(true);
+    if (blobResult.isOk()) {
+      const blob = blobResult.value as Blob;
+      const text = await blob.text();
+      expect(text).toBe("blob data");
+    }
+  });
+
+  test("reads response as arrayBuffer", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response(new TextEncoder().encode("abc").buffer),
+    });
+
+    const response = await api.endpoint("/doc").output(z.unknown()).result();
+    expect(response.isOk()).toBe(true);
+    if (response.isErr()) return;
+
+    const bufResult = await response.value.arrayBuffer();
+    expect(bufResult.isOk()).toBe(true);
+    if (bufResult.isOk()) {
+      expect(new Uint8Array(bufResult.value as ArrayBuffer)).toEqual(new Uint8Array([97, 98, 99]));
+    }
+  });
+});
+
+describe(".output() schema", () => {
+  test("output schema validates and rejects invalid response body", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ name: 123 }),
+    });
+
+    const response = await api.endpoint("/posts")
+      .output(z.object({ name: z.string() }))
+      .result();
+
+    expect(response.isOk()).toBe(true);
+    if (response.isErr()) return;
+
+    const body = await response.value.json();
+    expect(body.isErr()).toBe(true);
+    if (body.isErr()) {
+      expect(body.error).toBeInstanceOf(HttpContractSchemaError);
+    }
+  });
+});
+
+describe("throw mode", () => {
+  test("direct call throws on fetch failure", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => { throw new Error("fail"); },
+    });
+
+    await expect(api.endpoint("/posts")()).rejects.toThrow(HttpContractFetchError);
+  });
+
+  test("direct call throws on schema error", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response("not json"),
+    });
+
+    const response = await api.endpoint("/posts").output(z.unknown())();
+    await expect(response.json()).rejects.toThrow(HttpContractJsonParseError);
+  });
+});
+
+describe("clone()", () => {
+  test("cloned TypedResponse can read body independently", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ value: 42 }),
+    });
+
+    const response = await api.endpoint("/data").output(z.unknown()).result();
+    expect(response.isOk()).toBe(true);
+    if (response.isErr()) return;
+
+    const cloned = response.value.clone();
+    const originalBodyResult = await response.value.text();
+    const clonedBodyResult = await cloned.text();
+
+    expect(originalBodyResult.isOk()).toBe(true);
+    expect(clonedBodyResult.isOk()).toBe(true);
+    if (originalBodyResult.isOk() && clonedBodyResult.isOk()) {
+      expect(originalBodyResult.value).toBe(clonedBodyResult.value);
+    }
+  });
+});
