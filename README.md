@@ -23,7 +23,7 @@ Validation requires a [Standard Schema](https://standardschema.dev/)-compatible 
 `http-contract` is built on two libraries that surface through its API:
 
 - [**better-result**](https://better-result.dev/) -- Every fallible operation returns a `Result<T, E>` type instead of throwing. The `.result()` calling mode, `.validate()`, and `.transform()` all use `Result` from this library.
-- [**@prodkit/op**](https://github.com/trvswgnr/prodkit/tree/main/packages/op) -- The `.op()` calling mode returns composable `Op` values that can be combined, retried, and run lazily via `Op.run()`.
+- [**@prodkit/op**](https://github.com/trvswgnr/prodkit/tree/main/packages/op) -- The `.op` calling mode exposes composable `Op` values that can be combined, retried, and run lazily via `Op.run()`.
 
 You do not need to install these separately; they ship as dependencies of http-contract.
 
@@ -147,7 +147,7 @@ Error types from hooks and schemas are unioned into the `E` type parameter autom
 
 ### Op mode
 
-The `.op()` method returns an `Op` from [`@prodkit/op`](https://github.com/trvswgnr/prodkit/tree/main/packages/op). Ops are composable, lazy values -- you build a computation graph by combining Ops, then run it with `Op.run()` to produce a `Result`.
+The `.op` property is an `Op` from [`@prodkit/op`](https://github.com/trvswgnr/prodkit/tree/main/packages/op). Ops are composable, lazy values -- you build a computation graph by combining Ops, then run it to produce a `Result`.
 
 ```ts
 import { Op } from "@prodkit/op";
@@ -159,6 +159,8 @@ const program = Op(function* (id: number) {
 });
 
 const result = await program.run(1);
+
+const direct = await getPost.op.run({ path: { postId: 1 } });
 ```
 
 Because Ops compose, you can combine multiple requests, attach retry policies, or interleave other Op-based logic before executing anything.

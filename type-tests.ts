@@ -70,6 +70,22 @@ requiredQueryUrl.url({ query: {} });
 
 refinedPath.result.url({ path: { postId: 123 } });
 refinedPath.op.url({ path: { postId: 123 } });
+refinedPath.op({ path: { postId: 123 } }).run();
+refinedPath.op.run({ path: { postId: 123 } });
+refinedPath.op.url({ path: { postId: 123 } }).run();
+refinedPath.op.url.run({ path: { postId: 123 } });
+
+// @ts-expect-error endpoint.op is a parameterized Op, so required path args are still required.
+refinedPath.op();
+
+// @ts-expect-error endpoint.op.run requires the same path args.
+refinedPath.op.run();
+
+// @ts-expect-error endpoint.op.run path key mismatch.
+refinedPath.op.run({ path: { id: 123 } });
+
+// @ts-expect-error endpoint.op.url.run path key mismatch.
+refinedPath.op.url.run({ path: { id: 123 } });
 
 // @ts-expect-error .result.url() path key mismatch.
 refinedPath.result.url({ path: { id: 123 } });
@@ -78,6 +94,11 @@ optionalQueryUrl.result.url({});
 optionalQueryUrl.op.url({});
 optionalQueryUrl.result.url({ query: { id: 1 } });
 optionalQueryUrl.op.url({ query: { id: 1 } });
+optionalQueryUrl.op.run({});
+optionalQueryUrl.op.run({ query: { id: 1 } });
+optionalQueryUrl.op.url.run();
+optionalQueryUrl.op.url.run({});
+optionalQueryUrl.op.url.run({ query: { id: 1 } });
 
 // @ts-expect-error .result.url() with required query missing id.
 requiredQueryUrl.result.url({ query: {} });

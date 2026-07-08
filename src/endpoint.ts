@@ -39,16 +39,21 @@ export function createEndpoint(state: EndpointState) {
 
   call.result = (args: Record<string, unknown> = {}) => execute(state, args, "result") as unknown as Promise<BetterResult<TypedResponse<unknown, unknown, "result">, unknown>>;
   call.result.url = (args: Record<string, unknown> = {}) => buildUrlResult(state, args) as unknown as Promise<BetterResult<URL, unknown>>;
-  call.op = (args: Record<string, unknown> = {}) => Op.try(async () => {
-    const result = await execute(state, args, "op");
-    if (result.isErr()) throw result.error;
-    return result.value as unknown as TypedResponse<unknown, unknown, "op">;
-  }, error => error);
-  call.op.url = (args: Record<string, unknown> = {}) => Op.try(async () => {
-    const result = await buildUrlResult(state, args);
-    if (result.isErr()) throw result.error;
-    return result.value;
-  }, error => error);
+  const op = Op(function* (args: Record<string, unknown> = {}) {
+    return yield* Op.try(async () => {
+      const result = await execute(state, args, "op");
+      if (result.isErr()) throw result.error;
+      return result.value as unknown as TypedResponse<unknown, unknown, "op">;
+    }, error => error);
+  }) as any;
+  op.url = Op(function* (args: Record<string, unknown> = {}) {
+    return yield* Op.try(async () => {
+      const result = await buildUrlResult(state, args);
+      if (result.isErr()) throw result.error;
+      return result.value;
+    }, error => error);
+  });
+  call.op = op;
 
   call.method = (method: HttpMethod) => createEndpoint({ ...state, method, methodSet: true });
   call.path = (schema: StandardSchema) => {

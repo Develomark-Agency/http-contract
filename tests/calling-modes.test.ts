@@ -80,6 +80,38 @@ describe(".op() mode", () => {
       expect(result.error).toBeInstanceOf(HttpContractFetchError);
     }
   });
-});
 
+  test("endpoint.op can be run directly with endpoint arguments", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async (input) => Response.json({ url: String(input) }),
+    });
+
+    const endpoint = api.endpoint("/posts/{postId}").output(z.object({ url: z.string() }));
+    const result = await endpoint.op.run({ path: { postId: 123 } });
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      const body = await result.value.json().run();
+      expect(body.isOk()).toBe(true);
+      if (body.isOk()) {
+        expect(body.value).toEqual({ url: "https://example.com/posts/123" });
+      }
+    }
+  });
+
+  test("endpoint.op.url can be run directly with url arguments", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+    });
+
+    const endpoint = api.endpoint("/posts/{postId}");
+    const result = await endpoint.op.url.run({ path: { postId: 123 } });
+
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.toString()).toBe("https://example.com/posts/123");
+    }
+  });
+});
 

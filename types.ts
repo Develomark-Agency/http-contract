@@ -147,15 +147,19 @@ export type EndpointConfig = {
 type Amend<Config extends EndpointConfig, Key extends keyof EndpointConfig, Value> =
   Omit<Config, Key> & Record<Key, Value>;
 
+type UrlParameters<Path = never, Query = never> =
+  object extends CallArgs<Path, Query, never, never>
+    ? [args?: CallArgs<Path, Query, never, never>]
+    : [args: CallArgs<Path, Query, never, never>];
+
 export type Endpoint<Template extends string, PathKeys extends string, Config extends EndpointConfig> = {
   (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<TypedResponse<Config["output"], Config["errors"], "throw">>;
   result: {
     (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<BetterResult<TypedResponse<Config["output"], Config["errors"], "result">, Config["errors"] | BuiltInRequestError>>;
     url(args: CallArgs<Config["path"], Config["query"], never, never>): Promise<BetterResult<URL, BuiltInRequestError>>;
   };
-  op: {
-    (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): ProdkitOp<TypedResponse<Config["output"], Config["errors"], "op">, Config["errors"] | BuiltInRequestError, []>;
-    url(args: CallArgs<Config["path"], Config["query"], never, never>): ProdkitOp<URL, BuiltInRequestError, []>;
+  op: ProdkitOp<TypedResponse<Config["output"], Config["errors"], "op">, Config["errors"] | BuiltInRequestError, CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>> & {
+    url: ProdkitOp<URL, BuiltInRequestError, UrlParameters<Config["path"], Config["query"]>>;
   };
   url(args: CallArgs<Config["path"], Config["query"], never, never>): Promise<URL>;
   method<M extends HttpMethod>(method: M): Endpoint<Template, PathKeys, Amend<Config, "methodSet", true>>;
