@@ -1,10 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import z from "zod";
-import {
-  defineApi,
-  HttpContractFetchError,
-  HttpContractJsonParseError,
-} from "../index";
+import { defineApi } from "../index";
+import { HttpContractFetchError, HttpContractJsonParseError } from "../errors";
 
 describe("throw mode", () => {
   test("direct call throws on fetch failure", async () => {

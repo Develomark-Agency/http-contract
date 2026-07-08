@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { Result } from "better-result";
 import z from "zod";
-import { defineApi, requestContextKey } from "../index";
+import { defineApi } from "../index";
+import { requestContextKey } from "../errors";
 
 describe(".validate()", () => {
   test("validate can abort with Result.err on non-2xx status", async () => {

@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import z from "zod";
+import { defineApi } from "../index";
 import {
-  defineApi,
   HttpContractAbortError,
   HttpContractFetchError,
   HttpContractJsonParseError,
   requestContextKey,
-} from "../index";
+} from "../errors";
 
 describe("default errors", () => {
   test("wraps fetch failures", async () => {

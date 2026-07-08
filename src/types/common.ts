@@ -1,7 +1,5 @@
-import type { Op as ProdkitOp } from "@prodkit/op";
 import type { Result as BetterResult } from "better-result";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
-import type { BuiltInBodyError, BuiltInRequestError } from "./errors";
 
 export type SchemaOutput<T> = T extends StandardSchema<unknown, infer Output> ? Output : never;
 export type CommonHttpMethod = "get" | "post" | "put" | "patch" | "delete";
@@ -36,9 +34,6 @@ export type DefaultPathParams<Template extends string> =
 export type PathSchemaOutput<Keys extends string> = {
   [Key in Keys]: PathParamValue;
 };
-type CallRequestOptions<MethodSet extends boolean> =
-  Omit<RequestInit, "body" | "headers" | "method"> &
-  (MethodSet extends true ? { method?: never } : { method?: HttpMethod });
 
 export type OnRequestContext = {
   url: URL;
@@ -100,8 +95,14 @@ export type CallArgs<Path = never, Query = never, Body = never, Headers = never>
   InputPart<"query", Query> &
   InputPart<"body", Body> &
   InputPart<"headers", Headers>;
+
+type CallRequestOptions<MethodSet extends boolean> =
+  Omit<RequestInit, "body" | "headers" | "method"> &
+  (MethodSet extends true ? { method?: never } : { method?: HttpMethod });
+
 export type EndpointCallArgs<MethodSet extends boolean, Path = never, Query = never, Body = never, Headers = never> =
   CallArgs<Path, Query, Body, Headers> & CallRequestOptions<MethodSet>;
+
 export type CallParameters<MethodSet extends boolean, Path = never, Query = never, Body = never, Headers = never> =
   object extends CallArgs<Path, Query, Body, Headers>
     ? [args?: EndpointCallArgs<MethodSet, Path, Query, Body, Headers>]
@@ -115,67 +116,3 @@ export type TransformOk<T, Fallback> =
   T extends BetterResult<infer Ok, unknown> ? Ok :
   [Exclude<T, void | undefined>] extends [never] ? Fallback : Exclude<T, void | undefined>;
 export type TransformError<T> = T extends BetterResult<unknown, infer E> ? E : never;
-
-type BodyReader<Output, Errors, Mode extends ResponseMode> =
-  Mode extends "op" ? ProdkitOp<Output, Errors | BuiltInBodyError, []> :
-  Mode extends "result" ? Promise<BetterResult<Output, Errors | BuiltInBodyError>> :
-  Promise<Output>;
-
-export type TypedResponse<Output, Errors, Mode extends ResponseMode = "throw"> =
-  Omit<Response, "json" | "text" | "blob" | "arrayBuffer" | "formData" | "clone"> & {
-    json(): BodyReader<Output, Errors, Mode>;
-    text(): BodyReader<Output, Errors, Mode>;
-    blob(): BodyReader<Output, Errors, Mode>;
-    arrayBuffer(): BodyReader<Output, Errors, Mode>;
-    formData(): BodyReader<Output, Errors, Mode>;
-    clone(): TypedResponse<Output, Errors, Mode>;
-  };
-
-export type EndpointConfig = {
-  methodSet: boolean;
-  path: unknown;
-  query: unknown;
-  body: unknown;
-  headers: unknown;
-  output: unknown;
-  errors: unknown;
-};
-
-type Amend<Config extends EndpointConfig, Key extends keyof EndpointConfig, Value> =
-  Omit<Config, Key> & Record<Key, Value>;
-
-export type Endpoint<Template extends string, PathKeys extends string, Config extends EndpointConfig> = {
-  (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<TypedResponse<Config["output"], Config["errors"], "throw">>;
-  result: {
-    (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<BetterResult<TypedResponse<Config["output"], Config["errors"], "result">, Config["errors"] | BuiltInRequestError>>;
-    url(args: CallArgs<Config["path"], Config["query"], never, never>): Promise<BetterResult<URL, BuiltInRequestError>>;
-  };
-  op: {
-    (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): ProdkitOp<TypedResponse<Config["output"], Config["errors"], "op">, Config["errors"] | BuiltInRequestError, []>;
-    url(args: CallArgs<Config["path"], Config["query"], never, never>): ProdkitOp<URL, BuiltInRequestError, []>;
-  };
-  url(args: CallArgs<Config["path"], Config["query"], never, never>): Promise<URL>;
-  method<M extends HttpMethod>(method: M): Endpoint<Template, PathKeys, Amend<Config, "methodSet", true>>;
-  path: [PathKeys] extends [never]
-    ? never
-    : <S extends StandardSchema<unknown, PathSchemaOutput<PathKeys>>>(schema: S) => Endpoint<Template, PathKeys, Amend<Config, "path", SchemaOutput<S>>>;
-  query<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "query", SchemaOutput<S>>>;
-  requestHeaders<S extends StandardSchema<unknown, SerializableParamRecord>>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "headers", SchemaOutput<S>>>;
-  responseHeaders<S extends StandardSchema<SerializableParamRecord, unknown>>(schema: S): Endpoint<Template, PathKeys, Config>;
-  body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, Amend<Config, "body", SchemaOutput<S>>>;
-  output<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "output", SchemaOutput<S>>>;
-  validate<F extends (ctx: RuntimeContext & {
-    path: [Config["path"]] extends [never] ? Record<string, PathParamValue> : Config["path"];
-    query: [Config["query"]] extends [never] ? QueryInput : Config["query"];
-    headers: [Config["headers"]] extends [never] ? HeadersInput : Config["headers"];
-  }) => ValidateReturn>(fn: F): Endpoint<Template, PathKeys, Amend<Config, "errors", Config["errors"] | ValidateError<ReturnType<F>>>>;
-  transform<F extends (ctx: RuntimeContext & {
-    path: [Config["path"]] extends [never] ? Record<string, PathParamValue> : Config["path"];
-    query: [Config["query"]] extends [never] ? QueryInput : Config["query"];
-    headers: [Config["headers"]] extends [never] ? HeadersInput : Config["headers"];
-    value: Config["output"];
-  }) => ValidateReturn>(fn: F): Endpoint<Template, PathKeys, Omit<Config, "output" | "errors"> & {
-    output: TransformOk<ReturnType<F>, Config["output"]>;
-    errors: Config["errors"] | TransformError<ReturnType<F>>;
-  }>;
-};
