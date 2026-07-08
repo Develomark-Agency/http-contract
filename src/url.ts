@@ -20,7 +20,8 @@ export async function buildHeaders(state: EndpointState, endpointHeaders: Serial
 
 export async function buildUrl(state: EndpointState, path: Record<string, PathParamValue>, endpointQuery: QueryInput) {
   const baseUrl = await resolveValue(state.api.baseUrl);
-  const url = new URL(interpolatePath(state.template, path), baseUrl);
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+  const url = new URL(interpolatePath(state.template, path).replace(/^\//, ""), normalizedBase);
   const baseQuery: QueryInput = {};
 
   for (const [key, value] of Object.entries(state.api.query ?? {})) {
