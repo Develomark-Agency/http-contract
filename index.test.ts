@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { Result } from "better-result";
 import z from "zod";
 import {
   defineApi,
@@ -217,5 +218,87 @@ describe("headers", () => {
     if (result.isErr()) {
       expect(result.error).toBeInstanceOf(HttpContractSchemaError);
     }
+  });
+});
+
+describe("global interceptors", () => {
+  test("onRequest can mutate init", async () => {
+    const seen: RequestInit[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async (_input, init) => {
+        seen.push(init ?? {});
+        return Response.json({});
+      },
+      onRequest: [
+        (ctx) => {
+          ctx.init.headers = { ...(ctx.init.headers as Record<string, string>), "X-Injected": "yes" };
+        },
+      ],
+    });
+
+    await api.endpoint("/posts")({});
+
+    expect((seen[0]?.headers as Record<string, string>)?.["X-Injected"]).toBe("yes");
+  });
+
+  test("onResponse can abort with Result.err", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response("forbidden", { status: 403 }),
+      onResponse: [
+        (ctx) => {
+          if (ctx.res.status === 403)
+            return Result.err(new Error("access denied"));
+        },
+      ],
+    });
+
+    const result = await api.endpoint("/posts").result();
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(Error);
+      expect((result.error as Error).message).toBe("access denied");
+    }
+  });
+
+  test("onResponse does not abort when hook returns void", async () => {
+    const seen: number[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => Response.json({ ok: true }),
+      onResponse: [
+        (ctx) => {
+          seen.push(ctx.res.status);
+        },
+      ],
+    });
+
+    const result = await api.endpoint("/posts").result();
+
+    expect(result.isOk()).toBe(true);
+    expect(seen).toEqual([200]);
+  });
+
+  test("onRequest and onResponse both run", async () => {
+    const order: string[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async (_input, init) => {
+        order.push("fetch");
+        return Response.json({});
+      },
+      onRequest: [
+        () => { order.push("onRequest"); },
+      ],
+      onResponse: [
+        () => { order.push("onResponse"); },
+      ],
+    });
+
+    await api.endpoint("/posts")({});
+
+    expect(order).toEqual(["onRequest", "fetch", "onResponse"]);
   });
 });

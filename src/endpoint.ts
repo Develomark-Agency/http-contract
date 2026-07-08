@@ -98,11 +98,21 @@ async function execute(state: EndpointState, args: Record<string, unknown>, mode
     return Result.err(new HttpContractRequestBuildError({ cause }));
   }
 
+  for (const hook of state.api.onRequest ?? []) {
+    const hookResult = normalizeHookResult(await hook({ url, init }));
+    if (hookResult.isErr()) return hookResult;
+  }
+
   let res: Response;
   try {
     res = await fetchImpl(url, init);
   } catch (cause) {
     return Result.err(toFetchError(cause));
+  }
+
+  for (const hook of state.api.onResponse ?? []) {
+    const hookResult = normalizeHookResult(await hook({ res, url, init }));
+    if (hookResult.isErr()) return hookResult;
   }
 
   const responseHeaders = await validateInput(state.responseHeadersSchema, headersToRecord(res.headers), "responseHeaders");

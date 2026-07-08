@@ -29,11 +29,24 @@ type CallRequestOptions<MethodSet extends boolean> =
   Omit<RequestInit, "body" | "headers" | "method"> &
   (MethodSet extends true ? { method?: never } : { method?: HttpMethod });
 
+export type OnRequestContext = {
+  url: URL;
+  init: RequestInit;
+};
+
+export type OnResponseContext = {
+  res: Response;
+  url: URL;
+  init: RequestInit;
+};
+
 export type ApiOptions = {
   baseUrl: ValueFactory<string>;
   fetch?: FetchLike;
   headers?: Record<string, ValueFactory<string>>;
   query?: Record<string, ValueFactory<QueryValue>>;
+  onRequest?: Array<(ctx: OnRequestContext) => MaybePromise<void | BetterResult<never, unknown>>>;
+  onResponse?: Array<(ctx: OnResponseContext) => MaybePromise<void | BetterResult<never, unknown>>>;
 };
 
 export type EndpointState = {

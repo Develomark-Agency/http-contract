@@ -1,3 +1,4 @@
+import { Result } from "better-result";
 import z from "zod";
 import {
   defineApi,
@@ -7,6 +8,8 @@ import {
   HttpContractRequestBuildError,
   HttpContractSchemaError
 } from "./index";
+import type { ApiOptions } from "./src/types";
+import type { BuiltInRequestError } from "./src/errors";
 
 const api = defineApi({
   baseUrl: "https://jsonplaceholder.typicode.com"
@@ -152,3 +155,39 @@ async function responseBodyErrorTypes() {
     | HttpContractSchemaError
   >;
 }
+
+// --- Global interceptors ---
+
+type _OnRequestIsCallable = AssertAssignable<
+  Parameters<NonNullable<ApiOptions["onRequest"]>[number]>[0],
+  { url: URL; init: RequestInit }
+>;
+
+type _OnResponseIsCallable = AssertAssignable<
+  Parameters<NonNullable<ApiOptions["onResponse"]>[number]>[0],
+  { res: Response; url: URL; init: RequestInit }
+>;
+
+class CustomApiError extends Error {
+  readonly _tag = "CustomApiError";
+}
+
+const apiWithHooks = defineApi({
+  baseUrl: "https://example.com",
+  onResponse: [
+    (ctx) => {
+      if (!ctx.res.ok) return Result.err(new CustomApiError("upstream error"));
+    },
+  ],
+});
+
+const hooksEndpoint = apiWithHooks.endpoint("/posts");
+type HooksResultError = InferResultError<ReturnType<typeof hooksEndpoint.result>>;
+type _HooksResultErrorIncludesCustom = AssertAssignable<
+  HooksResultError,
+  CustomApiError
+>;
+type _HooksResultErrorIncludesBuiltIn = AssertAssignable<
+  HooksResultError,
+  BuiltInRequestError
+>;
