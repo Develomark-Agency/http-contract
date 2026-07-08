@@ -17,6 +17,7 @@ const defaultPath = api.endpoint("/posts/{postId}");
 defaultPath({ path: { postId: 123 } });
 defaultPath({ path: { postId: "abc" } });
 defaultPath({ path: { postId: new Date() } });
+defaultPath({ path: { postId: 123 }, cache: "no-store", signal: new AbortController().signal });
 
 // @ts-expect-error Template path params are required.
 defaultPath({});
@@ -43,6 +44,10 @@ api.endpoint("/posts/{postId}").path(z.object({ postId: z.object({ bad: z.string
 
 api.endpoint("/posts").method("get");
 api.endpoint("/posts").method("propfind");
+api.endpoint("/posts")({ method: "post", cache: "no-store", signal: new AbortController().signal });
+
+// @ts-expect-error Callsite method is not allowed after endpoint .method(...) is explicit.
+api.endpoint("/posts").method("get")({ method: "post" });
 
 const optionalQuery = api.endpoint("/posts")
   .query(z.object({ id: z.number().optional() }));
@@ -62,6 +67,24 @@ requiredQuery();
 requiredQuery({});
 
 requiredQuery({ query: { id: 1 } });
+
+// @ts-expect-error Request header schema output must be a serializable record.
+api.endpoint("/posts").requestHeaders(z.number());
+
+api.endpoint("/posts").requestHeaders(z.object({
+  "X-Custom-Header": z.number(),
+  "X-Optional": z.string().optional()
+}));
+
+// @ts-expect-error Request header schema output values must be URL/header-stringifiable.
+api.endpoint("/posts").requestHeaders(z.object({ "X-Bad": z.object({ nested: z.string() }) }));
+
+// @ts-expect-error Response header schema input must be a serializable record, not a number.
+api.endpoint("/posts").responseHeaders(z.number());
+
+api.endpoint("/posts").responseHeaders(z.object({
+  "content-type": z.string()
+}));
 
 type InferResultError<T> = T extends Promise<infer Result>
   ? Result extends { error: infer Error }

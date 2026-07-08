@@ -4,7 +4,8 @@ import {
   defineApi,
   HttpContractAbortError,
   HttpContractFetchError,
-  HttpContractJsonParseError
+  HttpContractJsonParseError,
+  HttpContractSchemaError
 } from "./index";
 
 describe("default errors", () => {
@@ -85,5 +86,92 @@ describe("optional query args", () => {
       "https://example.com/posts",
       "https://example.com/posts?id=1"
     ]);
+  });
+});
+
+describe("request options", () => {
+  test("passes fetch request options through at the callsite", async () => {
+    const seen: RequestInit[] = [];
+    const signal = new AbortController().signal;
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async (_input, init) => {
+        seen.push(init ?? {});
+        return Response.json({});
+      }
+    });
+
+    await api.endpoint("/posts")({
+      method: "post",
+      cache: "no-store",
+      credentials: "omit",
+      signal
+    });
+
+    expect(seen[0]).toMatchObject({
+      method: "POST",
+      cache: "no-store",
+      credentials: "omit",
+      signal
+    });
+  });
+
+  test("endpoint method takes precedence over callsite method", async () => {
+    const methods: Array<string | undefined> = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async (_input, init) => {
+        methods.push(init?.method);
+        return Response.json({});
+      }
+    });
+
+    await (api.endpoint("/posts").method("put") as any)({ method: "post" });
+
+    expect(methods).toEqual(["PUT"]);
+  });
+});
+
+describe("headers", () => {
+  test("serializes schema-validated request headers", async () => {
+    const seen: RequestInit[] = [];
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async (_input, init) => {
+        seen.push(init ?? {});
+        return Response.json({});
+      }
+    });
+
+    const endpoint = api.endpoint("/posts")
+      .requestHeaders(z.object({
+        "X-Custom-Header": z.number(),
+        "X-List": z.array(z.number()).optional()
+      }));
+
+    await endpoint({ headers: { "X-Custom-Header": 123, "X-List": [1, 2] } });
+
+    expect(seen[0]?.headers).toEqual({
+      "X-Custom-Header": "123",
+      "X-List": "1, 2"
+    });
+  });
+
+  test("validates response headers", async () => {
+    const api = defineApi({
+      baseUrl: "https://example.com",
+      fetch: async () => new Response("{}", {
+        headers: { "content-type": "application/json" }
+      })
+    });
+
+    const result = await api.endpoint("/posts")
+      .responseHeaders(z.object({ "x-required": z.string() }))
+      .result();
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBeInstanceOf(HttpContractSchemaError);
+    }
   });
 });
