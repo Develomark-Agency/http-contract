@@ -12,7 +12,11 @@ export async function buildHeaders(state: EndpointState, endpointHeaders: Serial
   }
 
   if (hasBody && !hasHeader(headers, "content-type")) {
-    headers["Content-Type"] = "application/json";
+    if (!state.bodySerializer) {
+      headers["Content-Type"] = "application/json";
+    } else if (state.bodySerializer.contentType !== undefined) {
+      headers["Content-Type"] = state.bodySerializer.contentType;
+    }
   }
 
   return headers;

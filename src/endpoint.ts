@@ -7,6 +7,9 @@ import { validateInput } from "./schema";
 import { buildHeaders, buildUrl, extractDefaultPath, hasPathParams } from "./url";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
 import type {
+  BodyKind,
+  BodyOptions,
+  BodySerializer,
   Endpoint,
   EndpointState,
   HeadersInput,
@@ -49,7 +52,7 @@ export function createEndpoint(state: EndpointState) {
   call.query = (schema: StandardSchema) => createEndpoint({ ...state, querySchema: schema });
   call.requestHeaders = (schema: StandardSchema) => createEndpoint({ ...state, requestHeadersSchema: schema });
   call.responseHeaders = (schema: StandardSchema) => createEndpoint({ ...state, responseHeadersSchema: schema });
-  call.body = (schema: StandardSchema) => createEndpoint({ ...state, bodySchema: schema });
+  call.body = (schema: StandardSchema, options?: BodyOptions) => createEndpoint({ ...state, bodySchema: schema, bodySerializer: resolveBodySerializer(options) });
   call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema }) as unknown as Endpoint<string, string, boolean, unknown, unknown, unknown, unknown, SchemaOutput<typeof schema>, unknown>;
   call.validate = (validate: EndpointState["validate"]) => createEndpoint({ ...state, validate });
   call.transform = (transform: EndpointState["transform"]) => createEndpoint({ ...state, transform }) as any;
@@ -92,7 +95,8 @@ async function execute(state: EndpointState, args: Record<string, unknown>, mode
     };
 
     if (state.bodySchema !== undefined) {
-      init.body = JSON.stringify(body.value);
+      const serialize = state.bodySerializer?.serialize ?? JSON.stringify;
+      init.body = serialize(body.value) as any;
     }
   } catch (cause) {
     return Result.err(new HttpContractRequestBuildError({ cause }));
@@ -165,4 +169,32 @@ function getRequestOptions(args: Record<string, unknown>) {
   } = args;
 
   return requestOptions as Omit<RequestInit, "body" | "headers"> & { method?: HttpMethod };
+}
+
+function resolveBodySerializer(options?: BodyOptions): BodySerializer | undefined {
+  if (!options) return undefined;
+
+  if (options.serialize) {
+    return {
+      contentType: options.contentType,
+      serialize: options.serialize,
+    };
+  }
+
+  const kind: BodyKind = options.kind ?? "json";
+  switch (kind) {
+    case "json":
+      return { contentType: options.contentType ?? "application/json", serialize: JSON.stringify };
+    case "form-data": {
+      const result: BodySerializer = { serialize: (v) => v as any };
+      if (options.contentType) result.contentType = options.contentType;
+      return result;
+    }
+    case "url-encoded":
+      return { contentType: options.contentType ?? "application/x-www-form-urlencoded", serialize: (v) => v as any };
+    case "binary":
+      return { contentType: options.contentType ?? "application/octet-stream", serialize: (v) => v as any };
+    case "text":
+      return { contentType: options.contentType ?? "text/plain", serialize: String };
+  }
 }

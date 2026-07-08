@@ -16,6 +16,17 @@ export type ValueFactory<T> = T | (() => MaybePromise<T>);
 export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 export type ResponseMode = "throw" | "result" | "op";
 
+export type BodyKind = "json" | "form-data" | "url-encoded" | "binary" | "text";
+export type BodySerializer = {
+  contentType?: string;
+  serialize: (value: unknown) => unknown;
+};
+export type BodyOptions = {
+  kind?: BodyKind;
+  serialize?: (value: unknown) => unknown;
+  contentType?: string;
+};
+
 export type PathParamNames<Template extends string> =
   Template extends `${string}{${infer Param}}${infer Rest}` ? Param | PathParamNames<Rest> : never;
 export type DefaultPathParams<Template extends string> =
@@ -59,6 +70,7 @@ export type EndpointState = {
   requestHeadersSchema?: StandardSchema;
   responseHeadersSchema?: StandardSchema;
   bodySchema?: StandardSchema;
+  bodySerializer?: BodySerializer;
   outputSchema?: StandardSchema;
   validate?: (ctx: RuntimeContext) => unknown;
   transform?: (ctx: RuntimeContext & { value: unknown }) => unknown;
@@ -135,7 +147,7 @@ export type Endpoint<Template extends string, PathKeys extends string, MethodSet
   query<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, MethodSet, Path, SchemaOutput<S>, Body, Headers, Output, Errors>;
   requestHeaders<S extends StandardSchema<unknown, SerializableParamRecord>>(schema: S): Endpoint<Template, PathKeys, MethodSet, Path, Query, Body, SchemaOutput<S>, Output, Errors>;
   responseHeaders<S extends StandardSchema<SerializableParamRecord, unknown>>(schema: S): Endpoint<Template, PathKeys, MethodSet, Path, Query, Body, Headers, Output, Errors>;
-  body<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, MethodSet, Path, Query, SchemaOutput<S>, Headers, Output, Errors>;
+  body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, MethodSet, Path, Query, SchemaOutput<S>, Headers, Output, Errors>;
   output<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, MethodSet, Path, Query, Body, Headers, SchemaOutput<S>, Errors>;
   validate<F extends (ctx: RuntimeContext & {
     path: [Path] extends [never] ? Record<string, PathParamValue> : Path;
