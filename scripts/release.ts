@@ -7,7 +7,8 @@ type PackageJson = {
 };
 
 const pkg = packageJson as PackageJson;
-const tag = `v${pkg.version}`;
+const commit = (await $`git rev-parse --short HEAD`.text()).trim();
+const tag = `v${pkg.version}-${commit}`;
 const assetName = `${pkg.name}.tgz`;
 const assetPath = `release/${assetName}`;
 
