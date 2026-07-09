@@ -14,14 +14,6 @@
       "import": "./dist/index.mjs",
       "types": "./dist/index.d.mts"
     },
-    "./errors": {
-      "import": "./dist/errors.mjs",
-      "types": "./dist/errors.d.mts"
-    },
-    "./types": {
-      "import": "./dist/types.mjs",
-      "types": "./dist/types.d.mts"
-    },
     "./hono": {
       "import": "./dist/hono.mjs",
       "types": "./dist/hono.d.mts"
@@ -29,11 +21,11 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepare": "bun run build",
     "release": "bun scripts/release.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "hono": "^4.12.28",
     "tsdown": "^0.22.4",
     "zod": "^4.4.3"
   },

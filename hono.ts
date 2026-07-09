@@ -83,7 +83,7 @@ function wrapResponse<T extends ResponseLike>(response: T, mode: "result" | "op"
       }
 
       if (prop === "clone") {
-        return () => wrapResponse(target.clone() as T, mode as never);
+        return () => wrapResponse(target.clone() as unknown as T, mode as never);
       }
 
       const value = Reflect.get(target, prop, target);
@@ -92,10 +92,12 @@ function wrapResponse<T extends ResponseLike>(response: T, mode: "result" | "op"
   });
 }
 
-type HonoEndpointCall = (...args: any[]) => Promise<ResponseLike>;
+type HonoEndpointCall = (...args: any[]) => Promise<any>;
 type BodyReader = () => Promise<unknown>;
 type BodyReaderName = "arrayBuffer" | "blob" | "bytes" | "formData" | "json" | "text";
-type ResponseLike = Response & Partial<Record<"bytes", () => Promise<Uint8Array>>>;
+interface ResponseLike {
+  clone(): Response
+}
 
 type AsyncReturn<T> = T extends (...args: any[]) => infer R ? Awaited<R> : never;
 type ReaderReturn<T, K extends BodyReaderName> = T extends Record<K, (...args: any[]) => infer R> ? Awaited<R> : never;

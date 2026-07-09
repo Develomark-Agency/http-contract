@@ -1,8 +1,58 @@
 import type { Result as BetterResult } from "better-result";
 import { createEndpoint } from "./src/endpoint";
 import type { ApiOptions, DefaultPathParams, Endpoint, PathParamNames } from "./types";
-export { apiFromHono } from "./hono";
-export type { ApiFromHono } from "./hono";
+
+// Error classes (runtime)
+export {
+  HttpContractFetchError,
+  HttpContractAbortError,
+  HttpContractRequestBuildError,
+  HttpContractSchemaError,
+  HttpContractJsonParseError,
+  HttpContractBodyReadError,
+} from "./errors";
+
+// Error types
+export type {
+  BuiltInRequestError,
+  BuiltInBodyError,
+} from "./errors";
+
+// All types from types.ts
+export type {
+  CommonHttpMethod,
+  HttpMethod,
+  PathParamValue,
+  QueryValue,
+  HeadersInput,
+  SerializableParamRecord,
+  QueryInput,
+  MaybePromise,
+  ValueFactory,
+  FetchLike,
+  ResponseMode,
+  BodyKind,
+  BodySerializer,
+  BodyOptions,
+  PathParamNames,
+  DefaultPathParams,
+  PathSchemaOutput,
+  OnRequestContext,
+  OnResponseContext,
+  ApiOptions,
+  EndpointState,
+  RuntimeContext,
+  CallArgs,
+  EndpointCallArgs,
+  CallParameters,
+  ValidateReturn,
+  ValidateError,
+  TransformOk,
+  TransformError,
+  TypedResponse,
+  EndpointConfig,
+  Endpoint,
+} from "./types";
 
 export function defineApi<const T extends ApiOptions>(options: T) {
   type OnRequestErrors = ExtractHookErrors<T["onRequest"]>;
