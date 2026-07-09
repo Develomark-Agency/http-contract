@@ -1,6 +1,8 @@
 import type { Result as BetterResult } from "better-result";
 import { createEndpoint } from "./src/endpoint.js";
 import type { ApiOptions, DefaultPathParams, Endpoint, PathParamNames } from "./types.js";
+export { apiFromHono } from "./hono.js";
+export type { ApiFromHono } from "./hono.js";
 
 export function defineApi<const T extends ApiOptions>(options: T) {
   type OnRequestErrors = ExtractHookErrors<T["onRequest"]>;
