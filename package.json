@@ -3,32 +3,38 @@
   "version": "0.1.0",
   "description": "Type-safe HTTP client with a fluent endpoint builder, schema validation, and composable modes. Compatible with `\"better-result\"` and `\"@prodkit/op\".`",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.mts"
     },
     "./errors": {
-      "import": "./dist/errors.js",
-      "types": "./dist/errors.d.ts"
+      "import": "./dist/errors.mjs",
+      "types": "./dist/errors.d.mts"
     },
     "./types": {
-      "import": "./dist/types.js",
-      "types": "./dist/types.d.ts"
+      "import": "./dist/types.mjs",
+      "types": "./dist/types.d.mts"
     },
     "./hono": {
-      "import": "./dist/hono.js",
-      "types": "./dist/hono.d.ts"
+      "import": "./dist/hono.mjs",
+      "types": "./dist/hono.d.mts"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "prepare": "tsc"
+    "build": "tsdown",
+    "prepare": "bun run build",
+    "release": "bun scripts/release.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "tsdown": "^0.22.4",
     "zod": "^4.4.3"
   },
   "peerDependencies": {

@@ -1,5 +1,5 @@
 import { Result } from "better-result";
-import { HttpContractSchemaError, getErrorMessage } from "../errors.js";
+import { HttpContractSchemaError, getErrorMessage } from "../errors";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
 
 export async function validateInput(schema: StandardSchema | undefined, value: unknown, label: string) {

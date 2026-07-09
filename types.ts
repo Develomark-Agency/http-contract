@@ -1,7 +1,7 @@
 import type { Op as ProdkitOp } from "@prodkit/op";
 import type { Result as BetterResult } from "better-result";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
-import type { BuiltInBodyError, BuiltInRequestError } from "./errors.js";
+import type { BuiltInBodyError, BuiltInRequestError } from "./errors";
 
 export type CommonHttpMethod = "get" | "post" | "put" | "patch" | "delete";
 export type HttpMethod = CommonHttpMethod | (string & {});

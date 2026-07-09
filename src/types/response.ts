@@ -1,7 +1,7 @@
 import type { Op as ProdkitOp } from "@prodkit/op";
 import type { Result as BetterResult } from "better-result";
-import type { BuiltInBodyError } from "../errors.js";
-import type { ResponseMode } from "./common.js";
+import type { BuiltInBodyError } from "../errors";
+import type { ResponseMode } from "./common";
 
 type BodyReader<Output, Errors, Mode extends ResponseMode> =
   Mode extends "op" ? ProdkitOp<Output, Errors | BuiltInBodyError, []> :

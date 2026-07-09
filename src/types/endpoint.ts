@@ -1,7 +1,7 @@
 import type { Op as ProdkitOp } from "@prodkit/op";
 import type { Result as BetterResult } from "better-result";
 import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
-import type { BuiltInRequestError } from "../errors.js";
+import type { BuiltInRequestError } from "../errors";
 import type {
   BodyOptions,
   CallArgs,
@@ -17,8 +17,8 @@ import type {
   ValidateReturn,
   TransformOk,
   TransformError,
-} from "./common.js";
-import type { TypedResponse } from "./response.js";
+} from "./common";
+import type { TypedResponse } from "./response";
 
 export type EndpointConfig = {
   methodSet: boolean;

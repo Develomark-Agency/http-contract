@@ -16,7 +16,13 @@ const user = await res.json();
 
 ## Installation
 
-Use [`bun add`](https://bun.com/docs/guides/install/add-git) to add this GitHub repository
+Install a release tarball with [`bun add`](https://bun.sh/docs/guides/install/add-tarball):
+
+```sh
+bun add https://github.com/Develomark-Agency/http-contract/releases/latest/download/http-contract.tgz
+```
+
+Release tarballs are created with `bun run release`. The script builds `dist`, packs the package, uploads the tarball to a GitHub Release, and prints the stable `bun add` URL.
 
 Validation requires a [Standard Schema](https://standardschema.dev/)-compatible library, such as [Zod](https://zod.dev/) or [ArkType](https://arktype.io/).
 

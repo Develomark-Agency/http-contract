@@ -1,15 +1,15 @@
 import { Result } from "better-result";
 import z from "zod";
-import { defineApi } from "./index.js";
+import { defineApi } from "./index";
 import {
   HttpContractAbortError,
   HttpContractFetchError,
   HttpContractJsonParseError,
   HttpContractRequestBuildError,
   HttpContractSchemaError,
-} from "./errors.js";
-import type { ApiOptions } from "./types.js";
-import type { BuiltInRequestError } from "./errors.js";
+} from "./errors";
+import type { ApiOptions } from "./types";
+import type { BuiltInRequestError } from "./errors";
 
 const api = defineApi({
   baseUrl: "https://jsonplaceholder.typicode.com"

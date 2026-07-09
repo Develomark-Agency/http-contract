@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "outDir": "dist",
     "declaration": true,
     "declarationMap": true,
-    "rewriteRelativeImportExtensions": true,
     "moduleDetection": "force",
     "verbatimModuleSyntax": true,
     "strict": true,
