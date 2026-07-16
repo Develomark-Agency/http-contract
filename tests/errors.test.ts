@@ -6,7 +6,7 @@ import {
   HttpContractFetchError,
   HttpContractJsonParseError,
   requestContextKey,
-} from "../errors";
+} from "../src/errors";
 
 describe("default errors", () => {
   test("wraps fetch failures", async () => {

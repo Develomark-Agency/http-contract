@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { defineApi } from "../index";
-import { HttpContractRequestBuildError, requestContextKey } from "../errors";
+import { HttpContractRequestBuildError, requestContextKey } from "../src/errors";
 
 describe("value factories", () => {
   test("async baseUrl function", async () => {

@@ -32,6 +32,26 @@ export type EndpointConfig = {
   errors: unknown;
 };
 
+/** Infers the path parameters accepted by an endpoint. */
+export type InferEndpointPath<T> =
+  T extends Endpoint<any, any, infer Config> ? Config["path"] : never;
+
+/** Infers the query parameters accepted by an endpoint. */
+export type InferEndpointQuery<T> =
+  T extends Endpoint<any, any, infer Config> ? Config["query"] : never;
+
+/** Infers the request body accepted by an endpoint. */
+export type InferEndpointBody<T> =
+  T extends Endpoint<any, any, infer Config> ? Config["body"] : never;
+
+/** Infers the request headers accepted by an endpoint. */
+export type InferEndpointHeaders<T> =
+  T extends Endpoint<any, any, infer Config> ? Config["headers"] : never;
+
+/** Infers the output value produced by an endpoint's output schema. */
+export type InferEndpointOutput<T> =
+  T extends Endpoint<any, any, infer Config> ? Config["output"] : never;
+
 type Amend<Config extends EndpointConfig, Key extends keyof EndpointConfig, Value> =
   Omit<Config, Key> & Record<Key, Value>;
 type AmendPath<Config extends EndpointConfig, S extends StandardSchema> =

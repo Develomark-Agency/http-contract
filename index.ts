@@ -1,6 +1,6 @@
 import type { Result as BetterResult } from "better-result";
 import { createEndpoint } from "./src/endpoint";
-import type { ApiOptions, DefaultPathParams, Endpoint, PathParamNames } from "./types";
+import type { ApiOptions, DefaultPathParams, Endpoint, PathParamNames } from "./src/types/index";
 
 // Error classes (runtime)
 export {
@@ -10,49 +10,15 @@ export {
   HttpContractSchemaError,
   HttpContractJsonParseError,
   HttpContractBodyReadError,
-} from "./errors";
+} from "./src/errors";
 
 // Error types
 export type {
   BuiltInRequestError,
   BuiltInBodyError,
-} from "./errors";
+} from "./src/errors";
 
-// All types from types.ts
-export type {
-  CommonHttpMethod,
-  HttpMethod,
-  PathParamValue,
-  QueryValue,
-  HeadersInput,
-  SerializableParamRecord,
-  QueryInput,
-  MaybePromise,
-  ValueFactory,
-  FetchLike,
-  ResponseMode,
-  BodyKind,
-  BodySerializer,
-  BodyOptions,
-  PathParamNames,
-  DefaultPathParams,
-  PathSchemaOutput,
-  OnRequestContext,
-  OnResponseContext,
-  ApiOptions,
-  EndpointState,
-  RuntimeContext,
-  CallArgs,
-  EndpointCallArgs,
-  CallParameters,
-  ValidateReturn,
-  ValidateError,
-  TransformOk,
-  TransformError,
-  TypedResponse,
-  EndpointConfig,
-  Endpoint,
-} from "./types";
+export type * from "./src/types/index";
 
 export function defineApi<const T extends ApiOptions>(options: T) {
   type OnRequestErrors = ExtractHookErrors<T["onRequest"]>;

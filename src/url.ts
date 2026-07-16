@@ -7,7 +7,7 @@ import type {
   SerializableParamRecord,
   ValueFactory,
   MaybePromise
-} from "../types";
+} from "./types/index";
 
 export async function buildHeaders(state: EndpointState, endpointHeaders: SerializableParamRecord, hasBody: boolean) {
   const headers: HeadersInput = {};

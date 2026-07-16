@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import z from "zod";
 import { defineApi } from "../index";
-import { HttpContractSchemaError } from "../errors";
+import { HttpContractSchemaError } from "../src/errors";
 
 describe("path parameters", () => {
   test("interpolates multiple path parameters", async () => {

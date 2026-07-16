@@ -7,9 +7,16 @@ import {
   HttpContractJsonParseError,
   HttpContractRequestBuildError,
   HttpContractSchemaError,
-} from "./errors";
-import type { ApiOptions } from "./types";
-import type { BuiltInRequestError } from "./errors";
+} from "./src/errors";
+import type {
+  ApiOptions,
+  InferEndpointBody,
+  InferEndpointHeaders,
+  InferEndpointOutput,
+  InferEndpointPath,
+  InferEndpointQuery,
+} from "./src/types/index";
+import type { BuiltInRequestError } from "./src/errors";
 
 const api = defineApi({
   baseUrl: "https://jsonplaceholder.typicode.com"
@@ -30,6 +37,32 @@ defaultPath({ path: { id: 123 } });
 
 const refinedPath = api.endpoint("/posts/{postId}")
   .path(z.object({ postId: z.number() }));
+
+type AssertEqual<Actual, Expected> =
+  (<T>() => T extends Actual ? 1 : 2) extends
+  (<T>() => T extends Expected ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+
+type _DefaultEndpointPath = Assert<AssertEqual<
+  InferEndpointPath<typeof defaultPath>,
+  { postId: import("./src/types/index").PathParamValue }
+>>;
+type _RefinedEndpointPath = Assert<AssertEqual<
+  InferEndpointPath<typeof refinedPath>,
+  { postId: number }
+>>;
+
+const inferredTypesEndpoint = api.endpoint("/posts/{postId}")
+  .path(z.object({ postId: z.coerce.number() }))
+  .query(z.object({ page: z.number() }))
+  .body(z.object({ title: z.string() }))
+  .requestHeaders(z.object({ "X-Request-Id": z.string() }))
+  .output(z.object({ id: z.number(), title: z.string() }));
+
+type _EndpointQuery = Assert<AssertEqual<InferEndpointQuery<typeof inferredTypesEndpoint>, { page: number }>>;
+type _EndpointBody = Assert<AssertEqual<InferEndpointBody<typeof inferredTypesEndpoint>, { title: string }>>;
+type _EndpointHeaders = Assert<AssertEqual<InferEndpointHeaders<typeof inferredTypesEndpoint>, { "X-Request-Id": string }>>;
+type _EndpointOutput = Assert<AssertEqual<InferEndpointOutput<typeof inferredTypesEndpoint>, { id: number; title: string }>>;
 
 refinedPath({ path: { postId: 123 } });
 

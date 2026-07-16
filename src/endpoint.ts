@@ -12,7 +12,7 @@ import {
   toFetchError,
   type RequestContext,
   type ResponseContext
-} from "../errors";
+} from "./errors";
 import type {
   BodyKind,
   BodyOptions,
@@ -27,7 +27,7 @@ import type {
   RuntimeContext,
   SerializableParamRecord,
   TypedResponse
-} from "../types";
+} from "./types/index";
 
 export function createEndpoint(state: EndpointState) {
   const call = (async (args: Record<string, unknown> = {}) => {

@@ -1,6 +1,6 @@
 {
   "name": "http-contract",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Type-safe HTTP client with a fluent endpoint builder, schema validation, and composable modes. Compatible with `\"better-result\"` and `\"@prodkit/op\".`",
   "type": "module",
   "main": "dist/index.mjs",
