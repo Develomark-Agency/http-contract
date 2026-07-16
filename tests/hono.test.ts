@@ -105,7 +105,7 @@ describe("apiFromHono", () => {
     const { api, baseUrl, client, server } = createHonoClient();
 
     try {
-      const args = { param: { name: "Ada" }, query: { excited: "yes" } };
+      const args = { param: { name: "Ada" }, query: { excited: "yes" } } as const;
 
       const hcUrl = client.greeting[":name"].$url(args);
       const wrappedUrl = api.greeting[":name"].$url(args);
@@ -115,8 +115,9 @@ describe("apiFromHono", () => {
 
       const hcPath = client.greeting[":name"].$path(args);
       const wrappedPath = api.greeting[":name"].$path(args);
+      const typedWrappedPath: `/greeting/Ada?${string}` = wrappedPath;
       expect(wrappedPath).toBe(hcPath);
-      expect(wrappedPath as string).toBe("/greeting/Ada?excited=yes");
+      expect(typedWrappedPath).toBe("/greeting/Ada?excited=yes");
     } finally {
       server.stop(true);
     }

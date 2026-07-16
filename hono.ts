@@ -122,5 +122,7 @@ type HonoEndpoint<T extends HonoEndpointCall> = T & {
 export type ApiFromHono<T> =
   T extends HonoEndpointCall ? HonoEndpoint<T> :
   T extends (...args: any[]) => any ? T :
-  T extends object ? { [K in keyof T]: ApiFromHono<T[K]> } :
+  T extends object ? {
+    [K in keyof T]: K extends "$path" | "$url" | "$ws" ? T[K] : ApiFromHono<T[K]>
+  } :
   T;
