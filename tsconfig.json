@@ -17,5 +17,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["index.ts", "hono.ts", "src/**/*.ts"]
+  "include": ["index.ts", "hono.ts", "ai-sdk.ts", "src/**/*.ts"]
 }

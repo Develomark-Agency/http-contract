@@ -33,6 +33,26 @@ Validation requires a [Standard Schema](https://standardschema.dev/)-compatible 
 
 You do not need to install these separately; they ship as dependencies of http-contract.
 
+## Vercel AI SDK tools
+
+Install the optional `ai` peer dependency, then convert any endpoint into an executable tool. Its path, query, body, and request-header schemas become the tool input schema; execution returns the endpoint's parsed and validated JSON output.
+
+```ts
+import { toAiTool } from "http-contract/ai-sdk";
+
+const getUserTool = toAiTool(getUser, {
+  description: "Look up a user by ID",
+});
+
+const result = await generateText({
+  model,
+  tools: { getUser: getUserTool },
+  prompt: "Look up user 42",
+});
+```
+
+AI SDK cancellation signals are forwarded to the HTTP request. `description`, `strict`, and `needsApproval` may be configured through the second argument.
+
 ## Define an API Client
 
 Every request originates from a shared API configuration. You set the base URL, default headers, default query parameters, or a custom `fetch` implementation here.

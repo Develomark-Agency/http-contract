@@ -1,6 +1,7 @@
 import { Op } from "@prodkit/op";
 import { Result, type Result as BetterResult } from "better-result";
 import { createTypedResponse } from "./response";
+import { registerEndpointState } from "./endpoint-state";
 import { normalizeHookResult } from "./result-utils";
 import { validateInput } from "./schema";
 import { buildHeaders, buildUrl, extractDefaultPath, hasPathParams } from "./url";
@@ -84,6 +85,8 @@ export function createEndpoint(state: EndpointState) {
     if (result.isErr()) throw result.error;
     return result.value;
   };
+
+  registerEndpointState(call, state);
 
   return call;
 }

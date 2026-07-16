@@ -17,6 +17,10 @@
     "./hono": {
       "import": "./dist/hono.mjs",
       "types": "./dist/hono.d.mts"
+    },
+    "./ai-sdk": {
+      "import": "./dist/ai-sdk.mjs",
+      "types": "./dist/ai-sdk.d.mts"
     }
   },
   "scripts": {
@@ -25,12 +29,19 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "ai": "^7.0.30",
     "hono": "^4.12.28",
     "tsdown": "^0.22.4",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
+    "ai": ">=6 <8",
     "typescript": "^6"
+  },
+  "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@prodkit/op": "^0.2.2",
