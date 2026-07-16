@@ -41,10 +41,11 @@ describe("apiFromHono", () => {
     const { api, server } = createHonoClient();
 
     try {
-      const responseResult = await api.echo[":id"].$get.result({
+      const args = {
         param: { id: "7" },
         query: { q: "result" },
-      });
+      };
+      const responseResult = await api.echo[":id"].$get.result(args);
 
       expect(responseResult.isOk()).toBe(true);
       if (responseResult.isErr()) throw responseResult.error;
@@ -81,10 +82,11 @@ describe("apiFromHono", () => {
     const { api, server } = createHonoClient();
 
     try {
-      const responseResult = await api.greeting[":name"].$get.op.run({
+      const args = {
         param: { name: "Ada" },
         query: { excited: "yes" },
-      });
+      };
+      const responseResult = await api.greeting[":name"].$get.op.run(args);
 
       expect(responseResult.isOk()).toBe(true);
       if (responseResult.isErr()) throw responseResult.error;
@@ -114,7 +116,7 @@ describe("apiFromHono", () => {
       const hcPath = client.greeting[":name"].$path(args);
       const wrappedPath = api.greeting[":name"].$path(args);
       expect(wrappedPath).toBe(hcPath);
-      expect(wrappedPath).toBe("/greeting/Ada?excited=yes");
+      expect(wrappedPath as string).toBe("/greeting/Ada?excited=yes");
     } finally {
       server.stop(true);
     }
