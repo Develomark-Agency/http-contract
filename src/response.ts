@@ -24,7 +24,7 @@ export function createTypedResponse(state: EndpointState, res: Response, ctx: Ru
   };
 
   return new Proxy(res, {
-    get(target, prop, receiver) {
+    get(target, prop) {
       if (prop === "json") return wrap({ kind: "json", read: response => response.json() });
       if (prop === "text") return wrap({ kind: "body", read: response => response.text() });
       if (prop === "blob") return wrap({ kind: "body", read: response => response.blob() });
@@ -34,7 +34,7 @@ export function createTypedResponse(state: EndpointState, res: Response, ctx: Ru
         return () => createTypedResponse(state, target.clone() as unknown as Response, ctx, mode);
       }
 
-      const value = Reflect.get(target, prop, receiver);
+      const value = Reflect.get(target, prop, target);
       return typeof value === "function" ? value.bind(target) : value;
     }
   });
