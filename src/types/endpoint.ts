@@ -11,6 +11,7 @@ import type {
   PathParamValue,
   PathSchemaOutput,
   QueryInput,
+  OutputReader,
   RuntimeContext,
   SerializableParamRecord,
   ValidateError,
@@ -29,6 +30,7 @@ export type EndpointConfig = {
   body: unknown;
   headers: unknown;
   output: unknown;
+  readOutput: unknown;
   errors: unknown;
   pathSchema: StandardSchema | undefined;
   querySchema: StandardSchema | undefined;
@@ -74,6 +76,12 @@ type AmendQuery<Config extends EndpointConfig, S extends StandardSchema> =
     queryOutput: StandardSchema.InferOutput<S>;
     querySchema: S;
   };
+type AmendOutput<Config extends EndpointConfig, S extends StandardSchema> =
+  Omit<Config, "output" | "readOutput" | "outputSchema"> & {
+    output: StandardSchema.InferOutput<S>;
+    readOutput: StandardSchema.InferOutput<S>;
+    outputSchema: S;
+  };
 type SchemaWithOutputArgs<S extends StandardSchema, Output> =
   StandardSchema.InferOutput<S> extends Output ? [schema: S] : [schema: never];
 
@@ -83,12 +91,12 @@ type UrlParameters<Path = never, Query = never> =
     : [args: CallArgs<Path, Query, never, never>];
 
 export type Endpoint<Template extends string, PathKeys extends string, Config extends EndpointConfig> = {
-  (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<TypedResponse<Config["output"], Config["errors"], "throw">>;
+  (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<TypedResponse<Config["output"], Config["errors"], "throw", Config["readOutput"]>>;
   result: {
-    (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<BetterResult<TypedResponse<Config["output"], Config["errors"], "result">, Config["errors"] | BuiltInRequestError>>;
+    (...args: CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>): Promise<BetterResult<TypedResponse<Config["output"], Config["errors"], "result", Config["readOutput"]>, Config["errors"] | BuiltInRequestError>>;
     url(args: CallArgs<Config["path"], Config["query"], never, never>): Promise<BetterResult<URL, BuiltInRequestError>>;
   };
-  op: ProdkitOp<TypedResponse<Config["output"], Config["errors"], "op">, Config["errors"] | BuiltInRequestError, CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>> & {
+  op: ProdkitOp<TypedResponse<Config["output"], Config["errors"], "op", Config["readOutput"]>, Config["errors"] | BuiltInRequestError, CallParameters<Config["methodSet"], Config["path"], Config["query"], Config["body"], Config["headers"]>> & {
     url: ProdkitOp<URL, BuiltInRequestError, UrlParameters<Config["path"], Config["query"]>>;
   };
   url(args: CallArgs<Config["path"], Config["query"], never, never>): Promise<URL>;
@@ -110,7 +118,7 @@ export type Endpoint<Template extends string, PathKeys extends string, Config ex
   requestHeaders<S extends StandardSchema>(...args: SchemaWithOutputArgs<S, SerializableParamRecord>): Endpoint<Template, PathKeys, Amend<Amend<Config, "headers", StandardSchema.InferInput<S>>, "requestHeadersSchema", S>>;
   responseHeaders<S extends StandardSchema<SerializableParamRecord, unknown>>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "responseHeadersSchema", S>>;
   body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, Amend<Amend<Config, "body", StandardSchema.InferInput<S>>, "bodySchema", S>>;
-  output<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Amend<Config, "output", StandardSchema.InferOutput<S>>, "outputSchema", S>>;
+  output<S extends StandardSchema>(schema: S, reader?: OutputReader): Endpoint<Template, PathKeys, AmendOutput<Config, S>>;
   validate<F extends (ctx: Omit<RuntimeContext, "path" | "query" | "headers"> & {
     path: [Config["pathOutput"]] extends [never] ? Record<string, PathParamValue> : Config["pathOutput"];
     query: [Config["queryOutput"]] extends [never] ? QueryInput : Config["queryOutput"];
@@ -121,8 +129,9 @@ export type Endpoint<Template extends string, PathKeys extends string, Config ex
     query: [Config["queryOutput"]] extends [never] ? QueryInput : Config["queryOutput"];
     headers: [Config["headers"]] extends [never] ? HeadersInput : Config["headers"];
     value: Config["output"];
-  }) => ValidateReturn>(fn: F): Endpoint<Template, PathKeys, Omit<Config, "output" | "errors" | "transform"> & {
+  }) => ValidateReturn>(fn: F): Endpoint<Template, PathKeys, Omit<Config, "output" | "readOutput" | "errors" | "transform"> & {
     output: TransformOk<ReturnType<F>, Config["output"]>;
+    readOutput: TransformOk<ReturnType<F>, Config["readOutput"]>;
     errors: Config["errors"] | TransformError<ReturnType<F>>;
     transform: F;
   }>;

@@ -31,7 +31,8 @@ export function defineApi<const T extends ApiOptions>(options: T) {
         api: options as ApiOptions,
         template,
         method: "get",
-        methodSet: false
+        methodSet: false,
+        outputReader: "text"
       }) as unknown as Endpoint<Template, PathParamNames<Template>, {
         methodSet: false;
         path: DefaultPathParams<Template>;
@@ -41,6 +42,7 @@ export function defineApi<const T extends ApiOptions>(options: T) {
         body: never;
         headers: never;
         output: unknown;
+        readOutput: string;
         errors: HookErrors;
         pathSchema: undefined;
         querySchema: undefined;

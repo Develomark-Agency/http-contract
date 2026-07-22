@@ -173,9 +173,32 @@ Because Ops compose, you can combine multiple requests, attach retry policies, o
 
 ## Body Readers
 
-Every `TypedResponse` exposes multiple body readers. All readers run the same pipeline -- parse, validate against `.output(schema)`, then apply `.transform()`.
+Every `TypedResponse` has a canonical `read()` method. Without an output schema it reads text. Adding `.output(schema)` switches it to JSON, then validates the parsed value.
 
 ```ts
+const text = await api.endpoint("/health")().then(res => res.read());
+
+const post = await api.endpoint("/posts/1")
+  .output(postSchema)();
+const value = await post.read(); // JSON, validated by postSchema
+```
+
+Pass a reader name or function as the second `.output()` argument to override the JSON default:
+
+```ts
+api.endpoint("/document")
+  .output(z.string(), "text");
+
+api.endpoint("/number")
+  .output(z.number(), async res => Number(await res.text()));
+```
+
+Named readers are `"json"`, `"text"`, `"blob"`, `"arrayBuffer"`, and `"formData"`. `read()` follows the response mode: it throws in direct mode, returns a `Result` in `.result` mode, and returns an `Op` in `.op` mode.
+
+The explicit body readers remain available. All readers run the same parse → validate → transform steps.
+
+```ts
+await response.read();
 await response.json();          // JSON.parse then validate + transform
 await response.text();          // raw string
 await response.blob();

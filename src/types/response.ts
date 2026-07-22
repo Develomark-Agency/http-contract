@@ -8,12 +8,13 @@ type BodyReader<Output, Errors, Mode extends ResponseMode> =
   Mode extends "result" ? Promise<BetterResult<Output, Errors | BuiltInBodyError>> :
   Promise<Output>;
 
-export type TypedResponse<Output, Errors, Mode extends ResponseMode = "throw"> =
+export type TypedResponse<Output, Errors, Mode extends ResponseMode = "throw", ReadOutput = Output> =
   Omit<Response, "json" | "text" | "blob" | "arrayBuffer" | "formData" | "clone"> & {
+    read(): BodyReader<ReadOutput, Errors, Mode>;
     json(): BodyReader<Output, Errors, Mode>;
     text(): BodyReader<Output, Errors, Mode>;
     blob(): BodyReader<Output, Errors, Mode>;
     arrayBuffer(): BodyReader<Output, Errors, Mode>;
     formData(): BodyReader<Output, Errors, Mode>;
-    clone(): TypedResponse<Output, Errors, Mode>;
+    clone(): TypedResponse<Output, Errors, Mode, ReadOutput>;
   };

@@ -3,7 +3,7 @@ import { Result, type Result as BetterResult } from "better-result";
 import { attachRequestContext, attachResponseContext, toBodyError, type RequestContext, type ResponseContext } from "./errors";
 import { normalizeTransformResult } from "./result-utils";
 import { validateInput } from "./schema";
-import type { EndpointState, ResponseMode, RuntimeContext } from "./types/index";
+import type { EndpointState, OutputReader, ResponseMode, RuntimeContext } from "./types/index";
 
 type BodyReaderRuntime = {
   kind: "json" | "body";
@@ -25,6 +25,7 @@ export function createTypedResponse(state: EndpointState, res: Response, ctx: Ru
 
   return new Proxy(res, {
     get(target, prop) {
+      if (prop === "read") return wrap(resolveOutputReader(state.outputReader));
       if (prop === "json") return wrap({ kind: "json", read: response => response.json() });
       if (prop === "text") return wrap({ kind: "body", read: response => response.text() });
       if (prop === "blob") return wrap({ kind: "body", read: response => response.blob() });
@@ -38,6 +39,20 @@ export function createTypedResponse(state: EndpointState, res: Response, ctx: Ru
       return typeof value === "function" ? value.bind(target) : value;
     }
   });
+}
+
+function resolveOutputReader(reader: OutputReader): BodyReaderRuntime {
+  if (typeof reader === "function") {
+    return { kind: "body", read: async response => reader(response) };
+  }
+
+  switch (reader) {
+    case "json": return { kind: "json", read: response => response.json() };
+    case "text": return { kind: "body", read: response => response.text() };
+    case "blob": return { kind: "body", read: response => response.blob() };
+    case "arrayBuffer": return { kind: "body", read: response => response.arrayBuffer() };
+    case "formData": return { kind: "body", read: response => response.formData() };
+  }
 }
 
 async function readBodyResult(state: EndpointState, res: Response, ctx: RuntimeContext, reader: BodyReaderRuntime) {

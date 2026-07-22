@@ -12,6 +12,8 @@ export type MaybePromise<T> = T | Promise<T>;
 export type ValueFactory<T> = T | (() => MaybePromise<T>);
 export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 export type ResponseMode = "throw" | "result" | "op";
+export type OutputReaderName = "json" | "text" | "blob" | "arrayBuffer" | "formData";
+export type OutputReader = OutputReaderName | ((response: Response) => MaybePromise<unknown>);
 
 export type BodyKind = "json" | "form-data" | "url-encoded" | "binary" | "text";
 export type BodySerializer = {
@@ -66,6 +68,7 @@ export type EndpointState = {
   bodySchema?: StandardSchema;
   bodySerializer?: BodySerializer;
   outputSchema?: StandardSchema;
+  outputReader: OutputReader;
   validate?: (ctx: RuntimeContext) => unknown;
   transform?: (ctx: RuntimeContext & { value: unknown }) => unknown;
 };

@@ -91,6 +91,35 @@ type _EndpointBody = Assert<AssertEqual<InferEndpointBody<typeof inferredTypesEn
 type _EndpointHeaders = Assert<AssertEqual<InferEndpointHeaders<typeof inferredTypesEndpoint>, { "X-Request-Id": string }>>;
 type _EndpointOutput = Assert<AssertEqual<InferEndpointOutput<typeof inferredTypesEndpoint>, { id: number; title: string }>>;
 
+async function canonicalReaderTypes() {
+  const textResponse = await api.endpoint("/text")();
+  const text: string = await textResponse.read();
+
+  const jsonResponse = await api.endpoint("/json")
+    .output(z.object({ id: z.number() }), "json")();
+  const json: { id: number } = await jsonResponse.read();
+
+  const customResponse = await api.endpoint("/custom")
+    .output(z.number(), response => response.text().then(Number))();
+  const custom: number = await customResponse.read();
+
+  const resultResponse = await api.endpoint("/result").result();
+  if (resultResponse.isOk()) {
+    const body = await resultResponse.value.read();
+    if (body.isOk()) {
+      const resultText: string = body.value;
+    }
+  }
+
+  const opResponse = await api.endpoint("/op").op.run();
+  if (opResponse.isOk()) {
+    const body = await opResponse.value.read().run();
+    if (body.isOk()) {
+      const opText: string = body.value;
+    }
+  }
+}
+
 refinedPath({ path: { postId: 123 } });
 
 // @ts-expect-error .path(schema) narrows the call type.

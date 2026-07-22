@@ -76,7 +76,11 @@ export function createEndpoint(state: EndpointState) {
   call.requestHeaders = (schema: StandardSchema) => createEndpoint({ ...state, requestHeadersSchema: schema });
   call.responseHeaders = (schema: StandardSchema) => createEndpoint({ ...state, responseHeadersSchema: schema });
   call.body = (schema: StandardSchema, options?: BodyOptions) => createEndpoint({ ...state, bodySchema: schema, bodySerializer: resolveBodySerializer(options) });
-  call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema });
+  call.output = (schema: StandardSchema, reader: EndpointState["outputReader"] = "json") => createEndpoint({
+    ...state,
+    outputSchema: schema,
+    outputReader: reader,
+  });
   call.validate = (validate: EndpointState["validate"]) => createEndpoint({ ...state, validate });
   call.transform = (transform: EndpointState["transform"]) => createEndpoint({ ...state, transform }) as any;
 
