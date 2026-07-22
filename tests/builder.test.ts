@@ -3,6 +3,40 @@ import z from "zod";
 import { defineApi } from "../index";
 import { HttpContractSchemaError } from "../src/errors";
 
+describe("endpoint config", () => {
+  test("exposes configured schemas", () => {
+    const api = defineApi({ baseUrl: "https://example.com" });
+    const pathSchema = z.object({ id: z.number() });
+    const querySchema = z.object({ page: z.number() });
+    const requestHeadersSchema = z.object({ authorization: z.string() });
+    const responseHeadersSchema = z.object({ "content-type": z.string() });
+    const bodySchema = z.object({ title: z.string() });
+    const outputSchema = z.object({ ok: z.boolean() });
+    const validate = () => undefined;
+    const transform = ({ value }: { value: { ok: boolean } }) => value.ok;
+    const endpoint = api.endpoint("/posts/{id}")
+      .path(pathSchema)
+      .query(querySchema)
+      .requestHeaders(requestHeadersSchema)
+      .responseHeaders(responseHeadersSchema)
+      .body(bodySchema)
+      .output(outputSchema)
+      .validate(validate)
+      .transform(transform);
+
+    expect(endpoint.config).toEqual({
+      pathSchema,
+      querySchema,
+      requestHeadersSchema,
+      responseHeadersSchema,
+      bodySchema,
+      outputSchema,
+      validate,
+      transform,
+    });
+  });
+});
+
 describe("path parameters", () => {
   test("interpolates multiple path parameters", async () => {
     const urls: string[] = [];

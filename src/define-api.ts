@@ -24,6 +24,14 @@ export function defineApi<const T extends ApiOptions>(options: T) {
         headers: never;
         output: unknown;
         errors: HookErrors;
+        pathSchema: undefined;
+        querySchema: undefined;
+        requestHeadersSchema: undefined;
+        responseHeadersSchema: undefined;
+        bodySchema: undefined;
+        outputSchema: undefined;
+        validate: undefined;
+        transform: undefined;
       }>;
     }
   };

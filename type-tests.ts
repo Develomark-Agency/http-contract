@@ -59,6 +59,33 @@ const inferredTypesEndpoint = api.endpoint("/posts/{postId}")
   .requestHeaders(z.object({ "X-Request-Id": z.string() }))
   .output(z.object({ id: z.number(), title: z.string() }));
 
+const pathSchema = z.object({ postId: z.number() });
+const querySchema = z.object({ page: z.number() });
+const requestHeadersSchema = z.object({ "X-Request-Id": z.string() });
+const responseHeadersSchema = z.object({ "content-type": z.string() });
+const bodySchema = z.object({ title: z.string() });
+const outputSchema = z.object({ id: z.number() });
+const validateEndpoint = () => undefined;
+const transformEndpoint = ({ value }: { value: { id: number } }) => value.id;
+const configuredEndpoint = api.endpoint("/posts/{postId}")
+  .path(pathSchema)
+  .query(querySchema)
+  .requestHeaders(requestHeadersSchema)
+  .responseHeaders(responseHeadersSchema)
+  .body(bodySchema)
+  .output(outputSchema)
+  .validate(validateEndpoint)
+  .transform(transformEndpoint);
+
+type _ConfigPathSchema = Assert<AssertEqual<typeof configuredEndpoint.config.pathSchema, typeof pathSchema>>;
+type _ConfigQuerySchema = Assert<AssertEqual<typeof configuredEndpoint.config.querySchema, typeof querySchema>>;
+type _ConfigRequestHeadersSchema = Assert<AssertEqual<typeof configuredEndpoint.config.requestHeadersSchema, typeof requestHeadersSchema>>;
+type _ConfigResponseHeadersSchema = Assert<AssertEqual<typeof configuredEndpoint.config.responseHeadersSchema, typeof responseHeadersSchema>>;
+type _ConfigBodySchema = Assert<AssertEqual<typeof configuredEndpoint.config.bodySchema, typeof bodySchema>>;
+type _ConfigOutputSchema = Assert<AssertEqual<typeof configuredEndpoint.config.outputSchema, typeof outputSchema>>;
+type _ConfigValidate = Assert<AssertEqual<typeof configuredEndpoint.config.validate, typeof validateEndpoint>>;
+type _ConfigTransform = Assert<AssertEqual<typeof configuredEndpoint.config.transform, typeof transformEndpoint>>;
+
 type _EndpointQuery = Assert<AssertEqual<InferEndpointQuery<typeof inferredTypesEndpoint>, { page: number }>>;
 type _EndpointBody = Assert<AssertEqual<InferEndpointBody<typeof inferredTypesEndpoint>, { title: string }>>;
 type _EndpointHeaders = Assert<AssertEqual<InferEndpointHeaders<typeof inferredTypesEndpoint>, { "X-Request-Id": string }>>;

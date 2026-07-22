@@ -54,6 +54,17 @@ export function createEndpoint(state: EndpointState) {
   });
   call.op = op;
 
+  call.config = Object.freeze({
+    pathSchema: state.pathSchema,
+    querySchema: state.querySchema,
+    requestHeadersSchema: state.requestHeadersSchema,
+    responseHeadersSchema: state.responseHeadersSchema,
+    bodySchema: state.bodySchema,
+    outputSchema: state.outputSchema,
+    validate: state.validate,
+    transform: state.transform,
+  });
+
   call.method = (method: HttpMethod) => createEndpoint({ ...state, method, methodSet: true });
   call.path = (schema: StandardSchema) => {
     if (!hasPathParams(state.template)) {
@@ -65,17 +76,7 @@ export function createEndpoint(state: EndpointState) {
   call.requestHeaders = (schema: StandardSchema) => createEndpoint({ ...state, requestHeadersSchema: schema });
   call.responseHeaders = (schema: StandardSchema) => createEndpoint({ ...state, responseHeadersSchema: schema });
   call.body = (schema: StandardSchema, options?: BodyOptions) => createEndpoint({ ...state, bodySchema: schema, bodySerializer: resolveBodySerializer(options) });
-  call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema }) as unknown as Endpoint<string, string, {
-    methodSet: boolean;
-    path: unknown;
-    pathOutput: unknown;
-    query: unknown;
-    queryOutput: unknown;
-    body: unknown;
-    headers: unknown;
-    output: StandardSchema.InferOutput<typeof schema>;
-    errors: unknown;
-  }>;
+  call.output = (schema: StandardSchema) => createEndpoint({ ...state, outputSchema: schema });
   call.validate = (validate: EndpointState["validate"]) => createEndpoint({ ...state, validate });
   call.transform = (transform: EndpointState["transform"]) => createEndpoint({ ...state, transform }) as any;
 
