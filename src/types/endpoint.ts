@@ -1,8 +1,9 @@
 import type { Op as ProdkitOp } from "@prodkit/op";
 import type { Result as BetterResult } from "better-result";
-import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { BuiltInRequestError } from "../errors";
 import type {
+  StandardSchema,
   BodyOptions,
   CallArgs,
   CallParameters,
@@ -66,24 +67,24 @@ type Amend<Config extends EndpointConfig, Key extends keyof EndpointConfig, Valu
   Omit<Config, Key> & Record<Key, Value>;
 type AmendPath<Config extends EndpointConfig, S extends StandardSchema> =
   Omit<Config, "path" | "pathOutput" | "pathSchema"> & {
-    path: StandardSchema.InferInput<S>;
-    pathOutput: StandardSchema.InferOutput<S>;
+    path: StandardSchemaV1.InferInput<S>;
+    pathOutput: StandardSchemaV1.InferOutput<S>;
     pathSchema: S;
   };
 type AmendQuery<Config extends EndpointConfig, S extends StandardSchema> =
   Omit<Config, "query" | "queryOutput" | "querySchema"> & {
-    query: StandardSchema.InferInput<S>;
-    queryOutput: StandardSchema.InferOutput<S>;
+    query: StandardSchemaV1.InferInput<S>;
+    queryOutput: StandardSchemaV1.InferOutput<S>;
     querySchema: S;
   };
 type AmendOutput<Config extends EndpointConfig, S extends StandardSchema> =
   Omit<Config, "output" | "readOutput" | "outputSchema"> & {
-    output: StandardSchema.InferOutput<S>;
-    readOutput: StandardSchema.InferOutput<S>;
+    output: StandardSchemaV1.InferOutput<S>;
+    readOutput: StandardSchemaV1.InferOutput<S>;
     outputSchema: S;
   };
 type SchemaWithOutputArgs<S extends StandardSchema, Output> =
-  StandardSchema.InferOutput<S> extends Output ? [schema: S] : [schema: never];
+  StandardSchemaV1.InferOutput<S> extends Output ? [schema: S] : [schema: never];
 
 type UrlParameters<Path = never, Query = never> =
   object extends CallArgs<Path, Query, never, never>
@@ -115,9 +116,9 @@ export type Endpoint<Template extends string, PathKeys extends string, Config ex
     ? never
     : <S extends StandardSchema>(...args: SchemaWithOutputArgs<S, PathSchemaOutput<PathKeys>>) => Endpoint<Template, PathKeys, AmendPath<Config, S>>;
   query<S extends StandardSchema>(...args: SchemaWithOutputArgs<S, SerializableParamRecord>): Endpoint<Template, PathKeys, AmendQuery<Config, S>>;
-  requestHeaders<S extends StandardSchema>(...args: SchemaWithOutputArgs<S, SerializableParamRecord>): Endpoint<Template, PathKeys, Amend<Amend<Config, "headers", StandardSchema.InferInput<S>>, "requestHeadersSchema", S>>;
-  responseHeaders<S extends StandardSchema<SerializableParamRecord, unknown>>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "responseHeadersSchema", S>>;
-  body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, Amend<Amend<Config, "body", StandardSchema.InferInput<S>>, "bodySchema", S>>;
+  requestHeaders<S extends StandardSchema>(...args: SchemaWithOutputArgs<S, SerializableParamRecord>): Endpoint<Template, PathKeys, Amend<Amend<Config, "headers", StandardSchemaV1.InferInput<S>>, "requestHeadersSchema", S>>;
+  responseHeaders<S extends StandardSchema>(schema: S): Endpoint<Template, PathKeys, Amend<Config, "responseHeadersSchema", S>>;
+  body<S extends StandardSchema>(schema: S, options?: BodyOptions): Endpoint<Template, PathKeys, Amend<Amend<Config, "body", StandardSchemaV1.InferInput<S>>, "bodySchema", S>>;
   output<S extends StandardSchema>(schema: S, reader?: OutputReader): Endpoint<Template, PathKeys, AmendOutput<Config, S>>;
   validate<F extends (ctx: Omit<RuntimeContext, "path" | "query" | "headers"> & {
     path: [Config["pathOutput"]] extends [never] ? Record<string, PathParamValue> : Config["pathOutput"];

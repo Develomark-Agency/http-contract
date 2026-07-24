@@ -1,5 +1,6 @@
 import type { Result as BetterResult } from "better-result";
-import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
+import type { StandardSchemaV1, StandardJSONSchemaV1 } from "@standard-schema/spec";
+export type StandardSchema<Input = unknown, Output = Input> = StandardSchemaV1<Input, Output> & StandardJSONSchemaV1<Input, Output>;
 
 export type CommonHttpMethod = "get" | "post" | "put" | "patch" | "delete";
 export type HttpMethod = CommonHttpMethod | (string & {});

@@ -4,7 +4,6 @@ import { createTypedResponse } from "./response";
 import { normalizeHookResult } from "./result-utils";
 import { validateInput } from "./schema";
 import { buildHeaders, buildUrl, extractDefaultPath, hasPathParams } from "./url";
-import type { StandardSchemaV1 as StandardSchema } from "@standard-schema/spec";
 import {
   attachRequestContext,
   attachResponseContext,
@@ -14,10 +13,10 @@ import {
   type ResponseContext
 } from "./errors";
 import type {
+  StandardSchema,
   BodyKind,
   BodyOptions,
   BodySerializer,
-  Endpoint,
   EndpointState,
   HeadersInput,
   HttpMethod,
