@@ -1,0 +1,28 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { ArrayOr, Schema, URLSafeValue } from "../common";
+import { createResponseModifier } from "../endpoint-modifier";
+import { Result } from "better-result";
+import { SchemaValidationError } from "../errors";
+
+export function headersToRecord(headers: string[][] | Record<string, string | ReadonlyArray<string> | undefined> | Headers) {
+  return Object.fromEntries(headers instanceof Headers ? headers : Object.entries(headers));
+}
+
+export function responseHeaders<
+  S extends Schema<Record<string, ArrayOr<URLSafeValue>>, any>
+>(schema: S) {
+  return createResponseModifier("headers")(
+    async res => {
+      const rawHeaders = headersToRecord(res.headers);
+      const validated = await schema["~standard"].validate(rawHeaders);
+
+      if(validated.issues) {
+        return Result.err(new SchemaValidationError({ source: "response-headers", issues: validated.issues }));
+      }
+
+      return Result.ok({
+        headers: validated.value
+      });
+    }
+  )
+}
