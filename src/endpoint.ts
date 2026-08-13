@@ -5,7 +5,9 @@ import { ContractRequest, type RequestParams } from "./contract-request";
 import type { AnyEndpointModifier, AnyRequestModifier, callContribution, validContribution } from "./endpoint-modifier";
 
 export namespace Endpoint {
+  /** Any endpoint shape from which modifier types can be read. */
   export type Some = { " ~": { modifiers: AnyEndpointModifier[] } };
+  /** Gets the modifier tuple from an endpoint type. */
   export type ExtractModifiers<E extends Some> = E[" ~"]["modifiers"];
 
   type InferCall<M extends AnyEndpointModifier[]> = UnionToIntersection<{
@@ -14,6 +16,7 @@ export namespace Endpoint {
     }
   }[number]>;
 
+  /** Infers the parameters accepted when an endpoint sends a request. */
   export type InferCallParams<E extends Some> = RemoveEmpties<
     RemoveNevers<
       OptionalizeEmpties<
@@ -28,6 +31,7 @@ export namespace Endpoint {
     }
   }[number]>;
 
+  /** Infers the validated values exposed by an endpoint response. */
   export type InferValidParams<E extends Some> = RemoveEmpties<
     RemoveNevers<
       OptionalizeEmpties<
@@ -37,6 +41,7 @@ export namespace Endpoint {
   >;
 }
 
+/** Reports duplicate request or response modifier tags at compile time. */
 export type CheckUniqueKeys<M extends readonly AnyEndpointModifier[], Seen = never> =
   M extends readonly[infer Head extends AnyEndpointModifier, ...infer Tail extends readonly AnyEndpointModifier[]]
     ? `${Head["side"]} ${Head["tag"]}` extends Seen
@@ -44,10 +49,30 @@ export type CheckUniqueKeys<M extends readonly AnyEndpointModifier[], Seen = nev
       : CheckUniqueKeys<Tail, Seen | `${Head["side"]} ${Head["tag"]}`>
     : unknown;
 
+/**
+ * A typed HTTP operation built from request and response modifiers.
+ *
+ * Request modifiers determine the parameters accepted by `request()` and
+ * `fetch()`. Response modifiers determine the values available through
+ * `ContractResponse.valid`.
+ *
+ * @example
+ * ```ts
+ * const getPost = api.endpoint(
+ *   method("GET"),
+ *   path("/posts/{id}"),
+ *   responseBody(postSchema)
+ * );
+ *
+ * const response = await getPost.fetch({ path: { id: 1 } });
+ * const post = await response.valid.body();
+ * ```
+ */
 export class Endpoint<
   const Modifiers extends AnyEndpointModifier[]
 > {
   " ~";
+  /** Creates an endpoint. Prefer `APIConnector.endpoint()` so types infer cleanly. */
   constructor(
     private api: APIConnector,
     ...modifiers: Modifiers & CheckUniqueKeys<Modifiers>
@@ -55,16 +80,31 @@ export class Endpoint<
     this[" ~"] = { modifiers: modifiers as Modifiers };
   }
 
+  /**
+   * Builds a request without sending it.
+   * Call `run()` on the returned request when it is ready to send.
+   */
   async request(...[params, init]: RequestParams<this>): Promise<ContractRequest<this>> {
     return ContractRequest["from"](this, params, init);
   }
 
+  /**
+   * Builds and sends a request, then returns its typed response.
+   * This is the short form of calling `request()` followed by `run()`.
+   */
   async fetch(...args: RequestParams<this>) {
     const req = await this.request(...args);
     const res = await req.run();
     return res;
   }
 
+  /**
+   * Returns a JSON Schema for the endpoint's request parameters.
+   *
+   * Each modifier schema is stored in `$defs` or `definitions`, depending on
+   * the requested draft. Local references are rebased to stay within that
+   * modifier's definition.
+   */
   toJSONSchema(options: StandardJSONSchemaV1.Options): Record<string, unknown> {
     const requestModifiers = this[" ~"].modifiers.filter(
       (modifier): modifier is AnyRequestModifier => modifier.side === "request"

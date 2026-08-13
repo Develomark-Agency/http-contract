@@ -4,6 +4,21 @@ import { createRequestModifier, NO_MODIFIER_ARGS } from "../endpoint-modifier";
 import { Result } from "better-result";
 import { SchemaValidationError } from "../errors";
 
+/**
+ * Validates endpoint call input and applies it to request headers.
+ *
+ * Array values append more than one value. An `undefined` value removes a
+ * header that may have come from connector config or an earlier modifier.
+ *
+ * @example
+ * ```ts
+ * const endpoint = api.endpoint(
+ *   requestHeaders(z.object({ "X-Request-Id": z.string() }))
+ * );
+ *
+ * await endpoint.fetch({ headers: { "X-Request-Id": crypto.randomUUID() } });
+ * ```
+ */
 export function requestHeaders<
   S extends Schema<any, Record<string, ArrayOr<URLSafeValue | undefined>>>
 >(schema: S) {

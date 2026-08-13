@@ -1,14 +1,28 @@
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
 
+/**
+ * A value accepted by path, query, and request-header modifiers.
+ * Dates serialize as `YYYY-MM-DD`; other values serialize with `String()`.
+ */
 export type URLSafeValue = string | number | boolean | bigint | Date;
 export type HeaderPatch = Record<string, string | readonly string[] | undefined>;
+/**
+ * A Standard Schema that can also produce JSON Schema.
+ * Request and response modifiers use validation at runtime, while endpoint
+ * adapters use its JSON Schema form.
+ */
 export type Schema<In = any, Out = In> = StandardSchemaV1<In, Out> & StandardJSONSchemaV1<In, Out>;
 
+/** A value that may also be `null` or `undefined`. */
 export type Nullable<T> = T | null | undefined;
+/** A value returned now or through a promise. */
 export type PromiseOr<T> = T | Promise<T>;
+/** One value or a list of values. */
 export type ArrayOr<T> = T | T[];
+/** A value or a function that returns it. */
 export type GetterOr<T> = T | (() => PromiseOr<T>);
 
+/** A fetch-compatible function used to send HTTP requests. */
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export type Flatten<T> = {
@@ -42,6 +56,10 @@ export type RemoveEmpties<T> = Flatten<{
   [K in keyof T as IsActuallyEmpty<T[K]> extends true ? never : K]: T[K]
 }>;
 
+/**
+ * A supported method for reading a response body.
+ * Pass one as the first argument to `responseBody()` to override JSON reading.
+ */
 export type BodyReader =
   | "arrayBuffer"
   | "blob"
@@ -50,13 +68,19 @@ export type BodyReader =
   | "json"
   | "text";
 
+/** A primitive JSON value. */
 export type JSONPrimitive = string | number | boolean | null;
 
+/** Any value that JSON can represent. */
 export type JSONValue =
   | JSONPrimitive
   | JSONValue[]
   | { [key: string]: JSONValue };
 
+/**
+ * Maps each body reader name to the value returned by the matching `Response`
+ * method. JSON uses this package's `JSONValue` type.
+ */
 export type BodyReaderOutput = {
   [K in BodyReader]: K extends "json" ? JSONValue : Awaited<ReturnType<Response[K]>>
 };

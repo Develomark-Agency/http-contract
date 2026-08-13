@@ -5,13 +5,22 @@ import { NetworkError } from "./errors";
 import { ContractResponse } from "./contract-response";
 
 export namespace ContractRequest {
+  /** Request settings excluding fields controlled by endpoint modifiers. */
   export type Init<RemoveKeys extends PropertyKey> = Omit<RequestInit, RemoveKeys>;
 }
 
+/** The argument tuple accepted by an endpoint request. */
 export type RequestParams<E extends Endpoint<AnyEndpointModifier[]>> = {} extends Endpoint.InferCallParams<E>
   ? [params?: Endpoint.InferCallParams<E>, init?: ContractRequest.Init<keyof Endpoint.InferCallParams<E>>]
   : [params: Endpoint.InferCallParams<E>, init?: ContractRequest.Init<keyof Endpoint.InferCallParams<E>>];
 
+/**
+ * A prepared endpoint request that can be sent when ready.
+ *
+ * Create one with `Endpoint.request()`. This split is useful when code needs to
+ * pass a request around before sending it; use `Endpoint.fetch()` for the common
+ * build-and-send case.
+ */
 export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
   #params;
 
@@ -35,6 +44,10 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
     return new ContractRequest(endpoint, params, init);
   }
 
+  /**
+   * Applies each request modifier, sends the request, then applies each response
+   * modifier. Throws the modifier error or `NetworkError` when a step fails.
+   */
   async run() {
     const modifiers = this.endpoint[" ~"]["modifiers"];
     const api = this.endpoint["api"];

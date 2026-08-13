@@ -14,6 +14,23 @@ type RequestBodyParams<
   T extends Transform<S> | undefined
 > = [transform?: T] | [schema: S, transform?: T];
 
+/**
+ * Validates, transforms, and serializes an endpoint request body.
+ *
+ * A schema validates call input before an optional transform runs. The result is
+ * sent as text, binary data, form data, or JSON based on its value.
+ *
+ * @example
+ * ```ts
+ * const createPost = api.endpoint(
+ *   method("POST"),
+ *   path("/posts"),
+ *   requestBody(z.object({ title: z.string(), body: z.string() }))
+ * );
+ *
+ * await createPost.fetch({ body: { title: "Hello", body: "..." } });
+ * ```
+ */
 export function requestBody<
   S extends Schema<any, AnyBody> | undefined,
   T extends Transform<S> | undefined

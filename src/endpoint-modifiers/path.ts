@@ -5,6 +5,7 @@ import { Result, TaggedError } from "better-result";
 import { SchemaValidationError } from "../errors";
 
 export namespace PathModifier {
+  /** Gets parameter names enclosed in braces in a path template. */
   export type TemplateParameters<Template extends string>
     = Template extends `${string}{${infer Param extends string}}${infer Rest extends string}`
       ? Param | TemplateParameters<Rest>
@@ -15,12 +16,29 @@ type BasePathParameters<Template extends string> = {
   [K in PathModifier.TemplateParameters<Template>]: URLSafeValue
 };
 
+/** Reports path parameters that a request did not supply. */
 export class MissingPathParameterError extends TaggedError("MissingPathParameterError")<{
   parameters: string[]
 }> {
   source = "path";
 }
 
+/**
+ * Sets an endpoint path and fills values enclosed in braces.
+ *
+ * Pass a schema to validate and transform path parameters. Without a schema,
+ * parameter values may be strings, numbers, booleans, bigints, or dates.
+ *
+ * @example
+ * ```ts
+ * const getUser = api.endpoint(
+ *   method("GET"),
+ *   path("/users/{id}", z.object({ id: z.number().int() }))
+ * );
+ *
+ * await getUser.fetch({ path: { id: 42 } });
+ * ```
+ */
 export function path<
   Template extends string,
   S extends Schema<any, BasePathParameters<Template>> | undefined

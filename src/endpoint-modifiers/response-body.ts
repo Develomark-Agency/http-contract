@@ -28,6 +28,20 @@ type ReadResult<
       : never
   : Awaited<ReturnType<T & Function>>;
 
+/**
+ * Reads, validates, and optionally transforms an endpoint response body.
+ *
+ * Passing only a schema reads JSON by default. Pass a body reader first to read
+ * text, bytes, blobs, form data, or array buffers. The result is exposed as an
+ * async function at `response.valid.body`.
+ *
+ * @example
+ * ```ts
+ * const getPost = api.endpoint(responseBody(postSchema));
+ * const response = await getPost.fetch();
+ * const post = await response.valid.body();
+ * ```
+ */
 export function responseBody<
   B extends BodyReader,
   S extends Schema<BodyReaderOutput[B], any> | undefined,

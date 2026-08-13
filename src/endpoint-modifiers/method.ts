@@ -1,6 +1,7 @@
 import { Result, TaggedError } from "better-result";
 import { createRequestModifier, NO_MODIFIER_ARGS } from "../endpoint-modifier";
 
+/** A standard or custom HTTP method name. */
 export type Method =
   | "GET"
   | "HEAD"
@@ -18,6 +19,7 @@ type MethodParam<M extends [string, ...string[]]> = M extends [Method]
   ? M[number] | undefined
   : M[number];
 
+/** Reports a method that is not allowed by an endpoint. */
 export class InvalidMethodError<ValidMethods extends SomeMethods> extends TaggedError("InvalidMethodError")<{
   method?: string,
   valid: ValidMethods
@@ -62,6 +64,18 @@ function createMethodModifier<Methods extends SomeMethods>(...methods: Methods) 
   );
 }
 
+/**
+ * Sets a fixed method or lists the methods accepted by an endpoint call.
+ *
+ * One method needs no call parameter. With two or more methods, callers must
+ * supply the selected method through the endpoint's `method` parameter.
+ *
+ * @example
+ * ```ts
+ * api.endpoint(method("GET"), path("/posts"));
+ * api.endpoint(method("PUT", "PATCH"), path("/posts/{id}"));
+ * ```
+ */
 export function method<Methods extends SomeMethods>(...methods: Methods): ReturnType<typeof createMethodModifier<Methods>>;
 export function method(...methods: SomeMethods): ReturnType<typeof createMethodModifier<SomeMethods>>;
 export function method(...methods: SomeMethods) {

@@ -4,6 +4,24 @@ import type { AnyEndpointModifier } from "./endpoint-modifier";
 
 type JSONSchema = boolean | Record<string, any>;
 
+/**
+ * Adapts endpoint parameters to OpenAI's strict JSON Schema rules.
+ *
+ * OpenAI requires every object field to be present and forbids extra fields.
+ * This adapter represents optional endpoint fields as nullable fields, then
+ * removes those null placeholders in `decode()` before the endpoint is called.
+ * The `schema` property is built lazily and rejects unsupported schema forms.
+ *
+ * @example
+ * ```ts
+ * const adapter = new OpenAIJSONSchemaAdapter(listPosts);
+ *
+ * const endpointTool = tool({
+ *   inputSchema: jsonSchema(adapter.schema),
+ *   execute: (input: unknown) => listPosts.fetch(adapter.decode(input))
+ * });
+ * ```
+ */
 export class OpenAIJSONSchemaAdapter<
   E extends Endpoint<AnyEndpointModifier[]>
 > extends Adapter<E, Record<string, unknown>> {
@@ -19,6 +37,10 @@ export class OpenAIJSONSchemaAdapter<
     return schema;
   }
 
+  /**
+   * Removes null placeholders that represent omitted optional parameters.
+   * Nulls remain intact when the endpoint schema truly allows `null`.
+   */
   override decode(value: unknown): Endpoint.InferCallParams<E> {
     return decode(value, this.sourceSchema, this.sourceSchema) as Endpoint.InferCallParams<E>;
   }

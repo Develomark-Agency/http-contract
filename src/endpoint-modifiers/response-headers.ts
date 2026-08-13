@@ -8,6 +8,20 @@ export function headersToRecord(headers: string[][] | Record<string, string | re
   return Object.fromEntries(headers instanceof Headers ? headers : Object.entries(headers));
 }
 
+/**
+ * Validates response headers and exposes the parsed result on `response.valid.headers`.
+ * A schema transform can select or reshape headers instead of returning the full
+ * record.
+ *
+ * @example
+ * ```ts
+ * const endpoint = api.endpoint(
+ *   responseHeaders(z.record(z.string(), z.string()))
+ * );
+ * const response = await endpoint.fetch();
+ * console.log(response.valid.headers["content-type"]);
+ * ```
+ */
 export function responseHeaders<
   S extends Schema<Record<string, ArrayOr<URLSafeValue>>, any>
 >(schema: S) {
