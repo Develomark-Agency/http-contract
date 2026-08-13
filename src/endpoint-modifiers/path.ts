@@ -13,7 +13,7 @@ export namespace PathModifier {
 
 type BasePathParameters<Template extends string> = {
   [K in PathModifier.TemplateParameters<Template>]: URLSafeValue
-}
+};
 
 export class MissingPathParameterError extends TaggedError("MissingPathParameterError")<{
   parameters: string[]
@@ -36,7 +36,7 @@ export function path<
         ? StandardSchemaV1.InferInput<S>
         : never
   >()(
-    async (args, url, init) => {
+    async (args, url, _init) => {
       if(args === NO_MODIFIER_ARGS && parameters.length > 0) {
         return Result.err(new MissingPathParameterError({ parameters }));
       }
@@ -61,21 +61,21 @@ export function path<
     },
     parameters.length > 0
       ? {
-          required: true,
-          value: options => {
-            if(schema) {
-              return schema["~standard"].jsonSchema.input(options);
-            }
-
-            return {
-              type: "object",
-              properties: Object.fromEntries(
-                parameters.map(parameter => [parameter, {}])
-              ),
-              required: parameters
-            };
+        required: true,
+        value: options => {
+          if(schema) {
+            return schema["~standard"].jsonSchema.input(options);
           }
+
+          return {
+            type: "object",
+            properties: Object.fromEntries(
+              parameters.map(parameter => [parameter, {}])
+            ),
+            required: parameters
+          };
         }
+      }
       : undefined
   );
 }

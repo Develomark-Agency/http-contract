@@ -4,7 +4,7 @@ import { createResponseModifier } from "../endpoint-modifier";
 import { Result } from "better-result";
 import { SchemaValidationError } from "../errors";
 
-export function headersToRecord(headers: string[][] | Record<string, string | ReadonlyArray<string> | undefined> | Headers) {
+export function headersToRecord(headers: string[][] | Record<string, string | readonly string[] | undefined> | Headers) {
   return Object.fromEntries(headers instanceof Headers ? headers : Object.entries(headers));
 }
 
@@ -20,9 +20,7 @@ export function responseHeaders<
         return Result.err(new SchemaValidationError({ source: "response-headers", issues: validated.issues }));
       }
 
-      return Result.ok({
-        headers: validated.value
-      });
+      return Result.ok(validated.value as StandardSchemaV1.InferOutput<S>);
     }
-  )
+  );
 }

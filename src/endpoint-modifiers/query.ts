@@ -11,7 +11,7 @@ export function query<
   >
 >(schema: S) {
   return createRequestModifier("query")<StandardSchemaV1.InferInput<S>>()(
-    async (args, url, init) => {
+    async (args, url, _init) => {
       const input = (args as unknown) === NO_MODIFIER_ARGS ? {} : args;
       const validated = await schema["~standard"].validate(input);
 

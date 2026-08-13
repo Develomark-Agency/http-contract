@@ -2,50 +2,45 @@ import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/sp
 
 export type URLSafeValue = string | number | boolean | bigint | Date;
 export type HeaderPatch = Record<string, string | readonly string[] | undefined>;
-export type Schema<In = any, Out = In> = StandardSchemaV1<In, Out> & StandardJSONSchemaV1<In, Out>
+export type Schema<In = any, Out = In> = StandardSchemaV1<In, Out> & StandardJSONSchemaV1<In, Out>;
 
 export type Nullable<T> = T | null | undefined;
-export type PromiseOr<T> = T | Promise<T>
+export type PromiseOr<T> = T | Promise<T>;
 export type ArrayOr<T> = T | T[];
-export type GetterOr<T> = T | (() => PromiseOr<T>)
+export type GetterOr<T> = T | (() => PromiseOr<T>);
 
-export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export type Flatten<T> = {
   [K in keyof T]: T[K]
-} & {}
+} & {};
 
 export type UnionToIntersection<U> = Flatten<(U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never>;
 
 type IsEmptyish<T> =
   {} extends T ? true
-  : undefined extends T ? true
-  : false;
+    : undefined extends T ? true
+      : false;
 
 export type OptionalizeEmpties<T> = Flatten<{
   [K in keyof T as IsEmptyish<T[K]> extends true ? K : never]?: T[K]
 } & {
   [K in keyof T as IsEmptyish<T[K]> extends true ? never : K]: T[K]
-}>
+}>;
 
 export type RemoveNevers<T> = Flatten<{
   [K in keyof T as T[K] extends never ? never : K]: T[K]
-}>
+}>;
 
 type IsActuallyEmpty<T> = undefined extends T
   ? keyof NonNullable<T> extends never
     ? true
     : false
-  : false
+  : false;
 
 export type RemoveEmpties<T> = Flatten<{
   [K in keyof T as IsActuallyEmpty<T[K]> extends true ? never : K]: T[K]
-}>
-
-type S = RemoveEmpties<{
-  hello?: { what?: string } | undefined,
-  world: "string"
-}>
+}>;
 
 export type BodyReader =
   | "arrayBuffer"
@@ -64,7 +59,7 @@ export type JSONValue =
 
 export type BodyReaderOutput = {
   [K in BodyReader]: K extends "json" ? JSONValue : Awaited<ReturnType<Response[K]>>
-}
+};
 
 export function defaultSerializeValue(value: URLSafeValue) {
   if(value instanceof Date) {

@@ -5,14 +5,14 @@ import { ContractRequest, type RequestParams } from "./contract-request";
 import type { AnyEndpointModifier, AnyRequestModifier, callContribution, validContribution } from "./endpoint-modifier";
 
 export namespace Endpoint {
-  export type Some = { " ~": { modifiers: AnyEndpointModifier[] } }
+  export type Some = { " ~": { modifiers: AnyEndpointModifier[] } };
   export type ExtractModifiers<E extends Some> = E[" ~"]["modifiers"];
 
   type InferCall<M extends AnyEndpointModifier[]> = UnionToIntersection<{
     [K in keyof M]: {
       [S in M[K] extends { side: "request" } ? M[K]["tag"] : never]: M[K][typeof callContribution]
     }
-  }[number]>
+  }[number]>;
 
   export type InferCallParams<E extends Some> = RemoveEmpties<
     RemoveNevers<
@@ -20,13 +20,13 @@ export namespace Endpoint {
         InferCall<E[" ~"]["modifiers"]>
       >
     >
-  >
+  >;
 
   type InferValid<M extends AnyEndpointModifier[]> = UnionToIntersection<{
     [K in keyof M]: {
       [S in M[K] extends { side: "response" } ? M[K]["tag"] : never]: M[K][typeof validContribution]
     }
-  }[number]>
+  }[number]>;
 
   export type InferValidParams<E extends Some> = RemoveEmpties<
     RemoveNevers<
@@ -34,7 +34,7 @@ export namespace Endpoint {
         InferValid<E[" ~"]["modifiers"]>
       >
     >
-  >
+  >;
 }
 
 export type CheckUniqueKeys<M extends readonly AnyEndpointModifier[], Seen = never> =
@@ -52,7 +52,7 @@ export class Endpoint<
     private api: APIConnector,
     ...modifiers: Modifiers & CheckUniqueKeys<Modifiers>
   ) {
-    this[" ~"] = { modifiers: modifiers as Modifiers }
+    this[" ~"] = { modifiers: modifiers as Modifiers };
   }
 
   async request(...[params, init]: RequestParams<this>): Promise<ContractRequest<this>> {
@@ -82,15 +82,40 @@ export class Endpoint<
       .filter(schema => schema.required)
       .map(schema => schema.tag);
 
+    const definitionsKey = options.target === "draft-2020-12" ? "$defs" : "definitions";
+    const definitions = Object.fromEntries(schemas.map(schema => {
+      const reference = `#/${definitionsKey}/${escapeJSONPointer(schema.tag)}`;
+      return [schema.tag, rebaseReferences(schema.value, reference)];
+    }));
+
     return {
       type: "object",
       properties: Object.fromEntries(
-        schemas.map(schema => [
-          schema.tag,
-          schema.value
-        ])
+        schemas.map(schema => [schema.tag, {
+          $ref: `#/${definitionsKey}/${escapeJSONPointer(schema.tag)}`
+        }])
       ),
+      ...(schemas.length > 0 ? { [definitionsKey]: definitions } : {}),
       ...(required.length > 0 ? { required } : {})
     };
   }
+}
+
+function rebaseReferences(value: unknown, root: string): unknown {
+  if(Array.isArray(value)) {
+    return value.map(item => rebaseReferences(item, root));
+  }
+
+  if(typeof value !== "object" || value === null) return value;
+
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [
+    key,
+    key === "$ref" && typeof child === "string" && (child === "#" || child.startsWith("#/"))
+      ? root + child.slice(1)
+      : rebaseReferences(child, root)
+  ]));
+}
+
+function escapeJSONPointer(value: string) {
+  return value.replaceAll("~", "~0").replaceAll("/", "~1");
 }

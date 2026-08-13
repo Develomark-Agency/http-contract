@@ -8,7 +8,7 @@ export function requestHeaders<
   S extends Schema<any, Record<string, ArrayOr<URLSafeValue | undefined>>>
 >(schema: S) {
   return createRequestModifier("headers")<StandardSchemaV1.InferInput<S>>()(
-    async (args, url, init) => {
+    async (args, _url, _init) => {
       const input = (args as unknown) === NO_MODIFIER_ARGS ? {} : args;
       const validated = await schema["~standard"].validate(input);
 

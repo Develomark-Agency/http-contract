@@ -5,9 +5,9 @@ import { jsonPlaceholder } from "./client.ts";
 const deletePost = jsonPlaceholder.endpoint(
   method("DELETE"),
   path("/posts/{id}", z.object({
-    id: z.number().int().positive(),
+    id: z.number().int().positive()
   })),
-  responseBody(z.object({})),
+  responseBody(z.object({}))
 );
 
 const response = await deletePost.fetch({ path: { id: 1 } });
@@ -15,5 +15,5 @@ const body = await response.valid.body();
 
 console.log("05 - delete post", {
   status: response.status,
-  body,
+  body
 });

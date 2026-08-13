@@ -12,7 +12,7 @@ export type Method =
   | "QUERY"
   | (string & {});
 
-type SomeMethods = [Method, ...Method[]]
+type SomeMethods = [Method, ...Method[]];
 
 type MethodParam<M extends [string, ...string[]]> = M extends [Method]
   ? M[number] | undefined
@@ -55,15 +55,15 @@ function createMethodModifier<Methods extends SomeMethods>(...methods: Methods) 
     },
     methods.length > 1
       ? {
-          required: true,
-          value: () => ({ type: "string", enum: methods })
-        }
+        required: true,
+        value: () => ({ type: "string", enum: methods })
+      }
       : undefined
   );
 }
 
 export function method<Methods extends SomeMethods>(...methods: Methods): ReturnType<typeof createMethodModifier<Methods>>;
-export function method(...methods: SomeMethods): ReturnType<typeof createMethodModifier<SomeMethods>>
+export function method(...methods: SomeMethods): ReturnType<typeof createMethodModifier<SomeMethods>>;
 export function method(...methods: SomeMethods) {
   return createMethodModifier(...methods);
 }

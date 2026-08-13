@@ -5,7 +5,7 @@ import { Result } from "better-result";
 import { BodyReadError, SchemaValidationError } from "../errors";
 
 type Transform<B extends BodyReader, S extends Schema<BodyReaderOutput[B], any> | undefined>
-  = ((body: S extends Schema<any, any> ? StandardSchemaV1.InferOutput<S> : BodyReaderOutput[B]) => any)
+  = ((body: S extends Schema<any, any> ? StandardSchemaV1.InferOutput<S> : BodyReaderOutput[B]) => any);
 
 type ResponseBodyParams<
   B extends BodyReader,
@@ -26,14 +26,13 @@ type ReadResult<
     : S extends Schema<any, any>
       ? StandardSchemaV1.InferOutput<S>
       : never
-  : Awaited<ReturnType<T & Function>>
+  : Awaited<ReturnType<T & Function>>;
 
 export function responseBody<
   B extends BodyReader,
   S extends Schema<BodyReaderOutput[B], any> | undefined,
   T extends Transform<B, S> | undefined
 >(...[argA, argB, argC]: ResponseBodyParams<B, S, T>) {
-
   let reader, schema, transform;
   if(typeof argA === "string") {
     reader = argA;
@@ -52,15 +51,14 @@ export function responseBody<
   const args = { reader, schema, transform } as
     | { reader: B, schema: undefined, transform: T }
     | { reader: B, schema: S, transform: T }
-    | { reader: "json", schema: undefined, transform: T }
+    | { reader: "json", schema: undefined, transform: T };
 
   return createResponseModifier("body")(async res => {
-
     async function safeRead() {
       let readResult;
       try {
         readResult = await res[args.reader]();
-      } catch(e) {
+      } catch (e) {
         return Result.err(new BodyReadError({ source: "response-body", cause: e }));
       }
 
@@ -68,7 +66,7 @@ export function responseBody<
 
       if(args.schema) {
         const validated = await args.schema["~standard"].validate(readResult);
-        
+
         if(validated.issues) {
           return Result.err(new SchemaValidationError({ source: "response-body", issues: validated.issues }));
         }
@@ -77,12 +75,12 @@ export function responseBody<
       } else {
         output = readResult;
       }
-    
+
       if(args.transform) {
         try {
           const transformed = await args.transform(output as any);
           return Result.ok(transformed as ReadResult<B, S, T>);
-        } catch(e) {
+        } catch (e) {
           return Result.err(new BodyReadError({ source: "response-body", cause: e }));
         }
       } else {

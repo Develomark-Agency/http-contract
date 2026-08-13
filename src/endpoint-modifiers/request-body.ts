@@ -35,7 +35,7 @@ export function requestBody<
       : AnyBody;
 
   return createRequestModifier("body")<CallParams>()(
-    async (data, url, init) => {
+    async (data, _url, _init) => {
       const input = data === NO_MODIFIER_ARGS ? undefined : data;
 
       let output = input as AnyBody | undefined;
@@ -52,7 +52,7 @@ export function requestBody<
       if(args.transform) {
         try {
           output = await args.transform(output as any);
-        } catch(e) {
+        } catch (e) {
           return Result.err(new BodySerializationError({ source: "request-body" as const, cause: e }));
         }
       }
@@ -65,7 +65,7 @@ export function requestBody<
           init: { body },
           headers: { "Content-Type": contentType }
         });
-      } catch(e) {
+      } catch (e) {
         return Result.err(new BodySerializationError({ source: "request-body", cause: e }));
       }
     },

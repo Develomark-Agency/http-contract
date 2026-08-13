@@ -6,20 +6,20 @@ const createPost = jsonPlaceholder.endpoint(
   method("POST"),
   path("/posts"),
   requestBody(postDraftSchema),
-  responseBody(postSchema),
+  responseBody(postSchema)
 );
 
 const response = await createPost.fetch({
   body: {
     userId: 1,
     title: "A typed HTTP contract",
-    body: "The request and response both pass their schemas.",
-  },
+    body: "The request and response both pass their schemas."
+  }
 });
 const created = await response.valid.body();
 
 console.log("03 - create post", {
   status: response.status,
   id: created.id,
-  title: created.title,
+  title: created.title
 });

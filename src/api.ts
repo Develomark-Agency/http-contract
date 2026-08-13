@@ -19,7 +19,7 @@ export namespace APIConnector {
     headers?: GetterOr<Record<string, GetterOr<string>>>,
     query?: GetterOr<Record<string, GetterOr<URLSafeValue>>>,
     fetch?: FetchLike
-  }>
+  }>;
 }
 
 export class APIConnector {
@@ -29,7 +29,7 @@ export class APIConnector {
     const cfg = typeof this.config === "function"
       ? await this.config()
       : this.config;
-    
+
     const [baseUrl, headers, query] = await Promise.all([
       resolvePrimitive(cfg.baseUrl),
       resolvePrimitiveRecord(cfg.headers ?? {}),
@@ -41,12 +41,12 @@ export class APIConnector {
       headers,
       query,
       fetch: cfg.fetch ?? globalThis.fetch
-    }
+    };
   }
 
   endpoint<
     const Modifiers extends AnyEndpointModifier[]
->(...modifiers: Modifiers & CheckUniqueKeys<Modifiers>) {
+  >(...modifiers: Modifiers & CheckUniqueKeys<Modifiers>) {
     return new Endpoint<Modifiers>(this, ...modifiers);
   }
 }

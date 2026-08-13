@@ -5,7 +5,7 @@ import { NetworkError } from "./errors";
 import { ContractResponse } from "./contract-response";
 
 export namespace ContractRequest {
-  export type Init<RemoveKeys extends PropertyKey> = Omit<RequestInit, RemoveKeys>
+  export type Init<RemoveKeys extends PropertyKey> = Omit<RequestInit, RemoveKeys>;
 }
 
 export type RequestParams<E extends Endpoint<AnyEndpointModifier[]>> = {} extends Endpoint.InferCallParams<E>
@@ -24,7 +24,7 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
   }
 
   private get params() {
-    return this.#params as Endpoint.InferCallParams<E> | ({} extends Endpoint.InferCallParams<E> ? undefined : never)
+    return this.#params as Endpoint.InferCallParams<E> | ({} extends Endpoint.InferCallParams<E> ? undefined : never);
   }
 
   private static from<E extends Endpoint<AnyEndpointModifier[]>>(
@@ -90,7 +90,7 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
     let res: Response;
     try {
       res = await fetch(url, init);
-    } catch(e) {
+    } catch (e) {
       throw new NetworkError({ cause: e });
     }
 
@@ -98,7 +98,7 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
     for(const mod of modifiers) {
       const result = await mod.modifyResponse(res);
       if(!result) continue;
-      
+
       if(result.isOk()) {
         valid[mod.tag] = result.value;
       } else {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { method, path, query, responseBody } from "../index.ts";
+import { method, OpenAIJSONSchemaAdapter, path, query, responseBody, responseHeaders } from "../index.ts";
 import { jsonPlaceholder } from "./client.ts";
 import { postSchema } from "./schemas.ts";
 
@@ -7,18 +7,15 @@ const listPosts = jsonPlaceholder.endpoint(
   method("GET"),
   path("/posts"),
   query(z.object({
-    userId: z.number().int().positive().optional(),
+    userId: z.number().int().positive().optional()
   })),
   responseBody(z.array(postSchema)),
+  responseHeaders(z.object({ whatever: z.string() }))
 );
 
-const response = await listPosts.fetch({
-  query: { userId: 1 },
-});
-const posts = await response.valid.body();
+const adapter = new OpenAIJSONSchemaAdapter(listPosts);
 
-console.log("01 - list posts", {
-  status: response.status,
-  count: posts.length,
-  firstTitle: posts[0]?.title,
-});
+const res = await listPosts.fetch(adapter.decode({ method: null, query: { userId: null } }));
+const data = await res.valid.body();
+
+console.log(data);

@@ -4,25 +4,25 @@ import { jsonPlaceholder } from "./client.ts";
 import { postPatchSchema } from "./schemas.ts";
 
 const patchedPostSchema = postPatchSchema.extend({
-  id: z.number().int().positive(),
+  id: z.number().int().positive()
 });
 
 const updatePost = jsonPlaceholder.endpoint(
   method("PATCH"),
   path("/posts/{id}", z.object({
-    id: z.number().int().positive(),
+    id: z.number().int().positive()
   })),
   requestBody(postPatchSchema),
-  responseBody(patchedPostSchema),
+  responseBody(patchedPostSchema)
 );
 
 const response = await updatePost.fetch({
   path: { id: 1 },
-  body: { title: "A new title" },
+  body: { title: "A new title" }
 });
 const updated = await response.valid.body();
 
 console.log("04 - update post", {
   status: response.status,
-  post: updated,
+  post: updated
 });

@@ -1,7 +1,9 @@
 export { APIConnector } from "./src/api";
+export { Adapter } from "./src/adapter";
 export { Endpoint, type CheckUniqueKeys } from "./src/endpoint";
 export { ContractRequest } from "./src/contract-request";
 export { ContractResponse } from "./src/contract-response";
+export { OpenAIJSONSchemaAdapter } from "./src/openai-json-schema";
 
 export { method, InvalidMethodError, type Method } from "./src/endpoint-modifiers/method";
 export { path, MissingPathParameterError, type PathModifier } from "./src/endpoint-modifiers/path";
@@ -15,7 +17,7 @@ export {
   BodyReadError,
   BodySerializationError,
   NetworkError,
-  SchemaValidationError,
+  SchemaValidationError
 } from "./src/errors";
 
 export type {
@@ -29,5 +31,5 @@ export type {
   Nullable,
   PromiseOr,
   Schema,
-  URLSafeValue,
+  URLSafeValue
 } from "./src/common";
