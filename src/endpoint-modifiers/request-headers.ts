@@ -42,6 +42,10 @@ export function requestHeaders<
       return Result.ok({
         init: { headers }
       });
+    },
+    {
+      required: true,
+      value: options => schema["~standard"].jsonSchema.input(options)
     }
   );
 }

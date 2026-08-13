@@ -34,42 +34,54 @@ export function requestBody<
       ? Input
       : AnyBody;
 
-  return createRequestModifier("body")<CallParams>()(async (data, url, init) => {
-    const input = data === NO_MODIFIER_ARGS ? undefined : data;
-    
-    let output = input as AnyBody | undefined;
+  return createRequestModifier("body")<CallParams>()(
+    async (data, url, init) => {
+      const input = data === NO_MODIFIER_ARGS ? undefined : data;
 
-    if(args.schema) {
-      const validated = await args.schema["~standard"].validate(input);
-      if(validated.issues) {
-        return Result.err(new SchemaValidationError({ source: "request-body", issues: validated.issues }));
-      }
+      let output = input as AnyBody | undefined;
 
-      output = validated.value;
-    }
-
-    if(args.transform) {
-      try {
-        output = await args.transform(output as any);
-      } catch(e) {
-        return Result.err(new BodySerializationError({ source: "request-body" as const, cause: e }));
-      }
-    }
-
-    const contentType = getContentType(output);
-    try {
-      const body = serializeBody(output);
-  
-      return Result.ok({
-        init: {
-          body,
-          headers: { "Content-Type": contentType }
+      if(args.schema) {
+        const validated = await args.schema["~standard"].validate(input);
+        if(validated.issues) {
+          return Result.err(new SchemaValidationError({ source: "request-body", issues: validated.issues }));
         }
-      });
-    } catch(e) {
-      return Result.err(new BodySerializationError({ source: "request-body", cause: e }));
+
+        output = validated.value;
+      }
+
+      if(args.transform) {
+        try {
+          output = await args.transform(output as any);
+        } catch(e) {
+          return Result.err(new BodySerializationError({ source: "request-body" as const, cause: e }));
+        }
+      }
+
+      const contentType = getContentType(output);
+      try {
+        const body = serializeBody(output);
+
+        return Result.ok({
+          init: {
+            body,
+            headers: { "Content-Type": contentType }
+          }
+        });
+      } catch(e) {
+        return Result.err(new BodySerializationError({ source: "request-body", cause: e }));
+      }
+    },
+    {
+      required: true,
+      value: options => {
+        if(args.schema) {
+          return args.schema["~standard"].jsonSchema.input(options);
+        }
+
+        return {};
+      }
     }
-  });
+  );
 }
 
 function getContentType(value: any) {

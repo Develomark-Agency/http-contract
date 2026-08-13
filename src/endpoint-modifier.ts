@@ -1,5 +1,6 @@
+import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 import type { PromiseOr } from "./common";
-import type { Err, InferErr, InferOk, Ok, Result } from "better-result";
+import type { Err, InferErr, InferOk, Ok } from "better-result";
 
 export declare const callContribution: unique symbol;
 export declare const validContribution: unique symbol;
@@ -25,6 +26,7 @@ type ModifiedRequestResult<E extends BaseError> = void | Ok<ModifiedRequest, nev
 type ModifiedResponseResult<Valid, E extends BaseError> = void | Ok<Valid, never> | Err<never, E>
 
 export type AnyEndpointModifier = EndpointModifier<EndpointModifier.Side, string, any, any, BaseError, BaseError>;
+export type AnyRequestModifier = BaseRequestModifier<string, any, BaseError>;
 
 export interface EndpointModifier<
   Side extends EndpointModifier.Side,
@@ -44,7 +46,12 @@ export interface EndpointModifier<
   modifyResponse(res: Response): PromiseOr<ModifiedResponseResult<Valid, ResponseError>>;
 }
 
-export interface BaseRequestModifier<Tag extends string, Call, E extends BaseError> extends EndpointModifier<"request", Tag, Call, never, E, never> {};
+export interface BaseRequestModifier<Tag extends string, Call, E extends BaseError> extends EndpointModifier<"request", Tag, Call, never, E, never> {
+  readonly jsonSchema?: {
+    readonly required: boolean,
+    readonly value: (options: StandardJSONSchemaV1.Options) => Record<string, unknown>
+  }
+};
 export interface BaseResponseModifier<Tag extends string, Valid, E extends BaseError> extends EndpointModifier<"response", Tag, never, Valid, never, E> {};
 
 export function createRequestModifier<Tag extends string>(tag: Tag) {
@@ -54,7 +61,8 @@ export function createRequestModifier<Tag extends string>(tag: Tag) {
         args: Call | typeof NO_MODIFIER_ARGS,
         url: URL,
         init: RequestInit
-      ) => Output
+      ) => Output,
+      jsonSchema?: BaseRequestModifier<Tag, Call, BaseError>["jsonSchema"]
     ) {
       type E = InferErr<Exclude<Awaited<Output>, void>>;
 
@@ -64,7 +72,8 @@ export function createRequestModifier<Tag extends string>(tag: Tag) {
         tag,
         side: "request",
         modifyRequest: modifyRequest as RequestModifier<Tag>["modifyRequest"],
-        modifyResponse(res) {}
+        modifyResponse(res) {},
+        jsonSchema
       } as RequestModifier<Tag>
     }
   }

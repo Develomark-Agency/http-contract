@@ -1,7 +1,8 @@
+import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 import type { APIConnector } from "./api";
 import type { OptionalizeEmpties, RemoveEmpties, RemoveNevers, UnionToIntersection } from "./common";
 import { ContractRequest, type RequestParams } from "./contract-request";
-import type { AnyEndpointModifier, callContribution, validContribution } from "./endpoint-modifier";
+import type { AnyEndpointModifier, AnyRequestModifier, callContribution, validContribution } from "./endpoint-modifier";
 
 export namespace Endpoint {
   export type Some = { " ~": { modifiers: AnyEndpointModifier[] } }
@@ -62,5 +63,34 @@ export class Endpoint<
     const req = await this.request(...args);
     const res = await req.run();
     return res;
+  }
+
+  toJSONSchema(options: StandardJSONSchemaV1.Options): Record<string, unknown> {
+    const requestModifiers = this[" ~"].modifiers.filter(
+      (modifier): modifier is AnyRequestModifier => modifier.side === "request"
+    );
+    const schemas = requestModifiers.flatMap(modifier => {
+      if(!modifier.jsonSchema) return [];
+
+      return [{
+        tag: modifier.tag,
+        required: modifier.jsonSchema.required,
+        value: modifier.jsonSchema.value(options)
+      }];
+    });
+    const required = schemas
+      .filter(schema => schema.required)
+      .map(schema => schema.tag);
+
+    return {
+      type: "object",
+      properties: Object.fromEntries(
+        schemas.map(schema => [
+          schema.tag,
+          schema.value
+        ])
+      ),
+      ...(required.length > 0 ? { required } : {})
+    };
   }
 }

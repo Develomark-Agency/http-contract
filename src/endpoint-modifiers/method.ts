@@ -52,7 +52,13 @@ function createMethodModifier<Methods extends SomeMethods>(...methods: Methods) 
       return Result.ok({
         init: { method }
       });
-    }
+    },
+    methods.length > 1
+      ? {
+          required: true,
+          value: () => ({ type: "string", enum: methods })
+        }
+      : undefined
   );
 }
 

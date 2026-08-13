@@ -38,6 +38,10 @@ export function query<
       }
 
       return Result.ok({ url });
+    },
+    {
+      required: true,
+      value: options => schema["~standard"].jsonSchema.input(options)
     }
   );
 }

@@ -25,6 +25,8 @@ export function path<
   Template extends string,
   S extends Schema<any, BasePathParameters<Template>> | undefined
 >(template: Template, schema?: keyof BasePathParameters<Template> extends never ? never : S) {
+  const parameters = extractTemplateValues(template);
+
   return createRequestModifier("path")<
     undefined extends S
       ? keyof BasePathParameters<Template> extends never
@@ -33,37 +35,63 @@ export function path<
       : S extends StandardSchemaV1<any, any>
         ? StandardSchemaV1.InferInput<S>
         : never
-  >()(async (args, url, init) => {
-    const parameters = [...template.matchAll(/{([^}]*)}/g)]
-      .map(match => match[1])
-      .filter(p => p != null);
-    
-    if(args === NO_MODIFIER_ARGS && parameters.length > 0) {
-      return Result.err(new MissingPathParameterError({ parameters }));
-    }
-
-    const input = (args as unknown) === NO_MODIFIER_ARGS ? {} : args;
-
-    let pathArgs;
-    if(schema) {
-      const validated = await schema["~standard"].validate(input);
-      if(validated.issues) {
-        return Result.err(new SchemaValidationError({ source: "path", issues: validated.issues }));
+  >()(
+    async (args, url, init) => {
+      if(args === NO_MODIFIER_ARGS && parameters.length > 0) {
+        return Result.err(new MissingPathParameterError({ parameters }));
       }
 
-      pathArgs = validated.value;
-    } else {
-      pathArgs = input;
-    }
+      const input = (args as unknown) === NO_MODIFIER_ARGS ? {} : args;
 
-    url.pathname = replaceTemplateValues(template, pathArgs);
+      let pathArgs;
+      if(schema) {
+        const validated = await schema["~standard"].validate(input);
+        if(validated.issues) {
+          return Result.err(new SchemaValidationError({ source: "path", issues: validated.issues }));
+        }
 
-    return Result.ok({ url });
-  });
+        pathArgs = validated.value;
+      } else {
+        pathArgs = input;
+      }
+
+      url.pathname = replaceTemplateValues(template, pathArgs);
+
+      return Result.ok({ url });
+    },
+    parameters.length > 0
+      ? {
+          required: true,
+          value: options => {
+            if(schema) {
+              return schema["~standard"].jsonSchema.input(options);
+            }
+
+            return {
+              type: "object",
+              properties: Object.fromEntries(
+                parameters.map(parameter => [parameter, {}])
+              ),
+              required: parameters
+            };
+          }
+        }
+      : undefined
+  );
+}
+
+const templateRegex = /{(?<key>[^}]*)}/;
+
+function extractTemplateValues(template: string) {
+  return [...new Set(
+    [...template.matchAll(new RegExp(templateRegex, "g"))]
+      .map(match => match.groups?.key)
+      .filter((key): key is string => Boolean(key))
+  )];
 }
 
 function replaceTemplateValues(template: string, args: Record<string, NonNullable<URLSafeValue>>) {
-  const match = template.match(/{(?<key>[^}]*)}/);
+  const match = template.match(templateRegex);
 
   if(!match || !match[1] || match.index == null || !match.input) {
     if(template.startsWith("/")) return template;
