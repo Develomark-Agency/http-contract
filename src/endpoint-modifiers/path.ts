@@ -73,9 +73,10 @@ export function path<
         pathArgs = input;
       }
 
-      url.pathname = replaceTemplateValues(template, pathArgs);
+      const dummy = new URL(template, url.href);
+      dummy.pathname = replaceTemplateValues(decodeURIComponent(dummy.pathname), pathArgs);
 
-      return Result.ok({ url });
+      return Result.ok({ url: dummy });
     },
     parameters.length > 0
       ? {

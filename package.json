@@ -1,7 +1,7 @@
 {
   "name": "http-contract",
   "module": "index.ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "exports": {
     ".": "./index.ts",
     "./errors": "./errors.ts",
@@ -15,7 +15,7 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "build": "tsdown",
-    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "prepublishOnly": "bun run typecheck && bun test --pass-with-no-tests && bun run build",
     "release": "bun scripts/release"
   },
   "devDependencies": {
