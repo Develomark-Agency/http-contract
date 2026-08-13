@@ -1,5 +1,5 @@
 import { Result } from "better-result";
-import type { ArrayOr } from "../../dist/index.d.mts";
+import type { ArrayOr } from "../common";
 import { defaultSerializeValue, type URLSafeValue } from "../common";
 import { createRequestModifier } from "../endpoint-modifier";
 
