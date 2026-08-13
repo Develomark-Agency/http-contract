@@ -1,5 +1,5 @@
 import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
-import type { PromiseOr } from "./common";
+import type { HeaderPatch, PromiseOr } from "./common";
 import type { Err, InferErr, InferOk, Ok } from "better-result";
 
 export declare const callContribution: unique symbol;
@@ -17,7 +17,8 @@ export namespace EndpointModifier {
 
 interface ModifiedRequest {
   url?: URL,
-  init?: RequestInit
+  init?: Omit<RequestInit, "headers"> & { headers?: never },
+  headers?: HeaderPatch
 }
 
 interface BaseError { source: string }

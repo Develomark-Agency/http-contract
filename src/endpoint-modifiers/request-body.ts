@@ -62,10 +62,8 @@ export function requestBody<
         const body = serializeBody(output);
 
         return Result.ok({
-          init: {
-            body,
-            headers: { "Content-Type": contentType }
-          }
+          init: { body },
+          headers: { "Content-Type": contentType }
         });
       } catch(e) {
         return Result.err(new BodySerializationError({ source: "request-body", cause: e }));

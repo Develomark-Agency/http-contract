@@ -1,6 +1,7 @@
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
 
 export type URLSafeValue = string | number | boolean | bigint | Date;
+export type HeaderPatch = Record<string, string | readonly string[] | undefined>;
 export type Schema<In = any, Out = In> = StandardSchemaV1<In, Out> & StandardJSONSchemaV1<In, Out>
 
 export type Nullable<T> = T | null | undefined;
@@ -95,40 +96,24 @@ export async function resolvePrimitiveRecord<
   };
 }
 
-function mergeRecords(a: Record<PropertyKey, any>, b: Record<PropertyKey, any>) {
-  const result: Record<PropertyKey, any> = {}
+export function applyHeaderPatch(headersInit: RequestInit["headers"], patch: HeaderPatch) {
+  const headers = new Headers(headersInit);
 
-  for(const [key, value] of Object.entries(a)) {
-    if(value != null) {
-      result[key] = value;
+  for(const [key, value] of Object.entries(patch)) {
+    headers.delete(key);
+
+    if(value === undefined) {
+      continue;
     }
-  }
 
-  for(const [key, value] of Object.entries(b)) {
-    if(value === null) delete result[key];
-    if(value != null) {
-      if(Array.isArray(result[key]) && Array.isArray(value)) {
-        result[key] = [...result[key], ...value];
-      } else {
-        result[key] = value;
+    if(typeof value !== "string") {
+      for(const item of value) {
+        headers.append(key, item);
       }
+    } else {
+      headers.set(key, value);
     }
   }
 
-  return result;
-}
-
-function headersToRecord(headers: string[][] | Record<string, string | ReadonlyArray<string> | undefined> | Headers) {
-  return Object.fromEntries(headers instanceof Headers ? headers : Object.entries(headers));
-}
-
-export function mergeRequestInit(a?: RequestInit, b?: RequestInit) {
-  return {
-    ...a,
-    ...b,
-    headers: mergeRecords(
-      headersToRecord(a?.headers ?? {}),
-      headersToRecord(b?.headers ?? {})
-    ) ?? {}
-  }
+  return headers;
 }

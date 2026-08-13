@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { defaultSerializeValue, type ArrayOr, type Nullable, type Schema, type URLSafeValue } from "../common";
+import { defaultSerializeValue, type ArrayOr, type Schema, type URLSafeValue } from "../common";
 import { createRequestModifier, NO_MODIFIER_ARGS } from "../endpoint-modifier";
 import { Result } from "better-result";
 import { SchemaValidationError } from "../errors";
@@ -7,7 +7,7 @@ import { SchemaValidationError } from "../errors";
 export function query<
   S extends Schema<
     any,
-    Record<string, ArrayOr<Nullable<URLSafeValue>>>
+    Record<string, ArrayOr<URLSafeValue | undefined>>
   >
 >(schema: S) {
   return createRequestModifier("query")<StandardSchemaV1.InferInput<S>>()(
@@ -22,16 +22,14 @@ export function query<
       for(const [key, value] of Object.entries(validated.value)) {
         if(Array.isArray(value)) {
           for(const val of value) {
-            if(val != null) {
+            if(val !== undefined) {
               url.searchParams.append(key, defaultSerializeValue(val));
             }
           }
         } else {
-          if(value === null) {
-            url.searchParams.set(key, "null");
-          } else if(value != null) {
+          if(value !== undefined) {
             url.searchParams.set(key, defaultSerializeValue(value));
-          } else if(value === undefined) {
+          } else {
             url.searchParams.delete(key);
           }
         }

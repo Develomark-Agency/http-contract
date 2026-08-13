@@ -1,5 +1,5 @@
 import type { Endpoint } from "./endpoint";
-import { defaultSerializeValue, mergeRequestInit } from "./common";
+import { applyHeaderPatch, defaultSerializeValue } from "./common";
 import { NO_MODIFIER_ARGS, type AnyEndpointModifier } from "./endpoint-modifier";
 import { NetworkError } from "./errors";
 import { ContractResponse } from "./contract-response";
@@ -53,20 +53,34 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
       }
     }
 
-    let init = mergeRequestInit(initFromRequest, { headers }) satisfies RequestInit;
+    let init: RequestInit = {
+      ...initFromRequest,
+      headers: applyHeaderPatch(initFromRequest.headers, headers)
+    };
 
     for(const mod of modifiers) {
       const args = params != null && Object.hasOwn(params, mod.tag)
         ? params[mod.tag]
         : NO_MODIFIER_ARGS;
-      
-      const result = await mod.modifyRequest(args, new URL(url.href), structuredClone(init));
+
+      const { headers: initHeaders, ...initWithoutHeaders } = init;
+      const initForModifier: RequestInit = {
+        ...structuredClone(initWithoutHeaders),
+        headers: new Headers(initHeaders)
+      };
+      const result = await mod.modifyRequest(args, new URL(url.href), initForModifier);
       if(!result) continue;
 
       if(result.isOk()) {
         if(result.value.url) url = result.value.url;
         if(result.value.init) {
-          init = mergeRequestInit(init, result.value.init);
+          init = { ...init, ...result.value.init };
+        }
+        if(result.value.headers) {
+          init = {
+            ...init,
+            headers: applyHeaderPatch(init.headers, result.value.headers)
+          };
         }
       } else {
         throw result.error;

@@ -1,11 +1,11 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { defaultSerializeValue, type ArrayOr, type Nullable, type Schema, type URLSafeValue } from "../common";
+import { defaultSerializeValue, type ArrayOr, type HeaderPatch, type Schema, type URLSafeValue } from "../common";
 import { createRequestModifier, NO_MODIFIER_ARGS } from "../endpoint-modifier";
 import { Result } from "better-result";
 import { SchemaValidationError } from "../errors";
 
 export function requestHeaders<
-  S extends Schema<any, Record<string, ArrayOr<Nullable<URLSafeValue>>>>
+  S extends Schema<any, Record<string, ArrayOr<URLSafeValue | undefined>>>
 >(schema: S) {
   return createRequestModifier("headers")<StandardSchemaV1.InferInput<S>>()(
     async (args, url, init) => {
@@ -16,31 +16,22 @@ export function requestHeaders<
         return Result.err(new SchemaValidationError({ source: "request-headers", issues: validated.issues }));
       }
 
-      const headers = new Headers();
+      const headers: HeaderPatch = {};
 
       for(const [key, value] of Object.entries(validated.value)) {
         if(Array.isArray(value)) {
-          headers.delete(key);
-          for(const val of value) {
-            if(val === null) {
-              headers.append(key, "null");
-            } else if(val != null) {
-              headers.append(key, defaultSerializeValue(val));
-            }
-          }
+          headers[key] = value
+            .filter(val => val !== undefined)
+            .map(defaultSerializeValue);
         } else {
-          if(value === null) {
-            headers.append(key, "null");
-          } else if(value != null) {
-            headers.append(key, defaultSerializeValue(value));
-          } else if(value === undefined) {
-            headers.delete(key);
-          }
+          headers[key] = value === undefined
+            ? undefined
+            : defaultSerializeValue(value);
         }
       }
 
       return Result.ok({
-        init: { headers }
+        headers
       });
     },
     {
