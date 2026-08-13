@@ -45,10 +45,14 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
   }
 
   /**
-   * Applies each request modifier, sends the request, then applies each response
-   * modifier. Throws the modifier error or `NetworkError` when a step fails.
+   * Resolves the request URL without sending the request.
    */
-  async run() {
+  async url() {
+    const { url } = await this.resolveRequest();
+    return url;
+  }
+
+  private async resolveRequest() {
     const modifiers = this.endpoint[" ~"]["modifiers"];
     const api = this.endpoint["api"];
     const params = this.params as Record<string, unknown>;
@@ -99,6 +103,17 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
         throw result.error;
       }
     }
+
+    return { url, init, fetch };
+  }
+
+  /**
+   * Applies each request modifier, sends the request, then applies each response
+   * modifier. Throws the modifier error or `NetworkError` when a step fails.
+   */
+  async run() {
+    const modifiers = this.endpoint[" ~"]["modifiers"];
+    const { url, init, fetch } = await this.resolveRequest();
 
     let res: Response;
     try {
