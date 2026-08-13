@@ -1,15 +1,17 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { BodyReader, BodyReaderOutput, Schema } from "../common";
+import type { BodyReader, BodyReaderOutput } from "../common";
 import { createResponseModifier } from "../endpoint-modifier";
 import { Result } from "better-result";
 import { BodyReadError, SchemaValidationError } from "../errors";
 
-type Transform<B extends BodyReader, S extends Schema<BodyReaderOutput[B], any> | undefined>
-  = ((body: S extends Schema<any, any> ? StandardSchemaV1.InferOutput<S> : BodyReaderOutput[B]) => any);
+type AnySchema = StandardSchemaV1<any, any>;
+
+type Transform<B extends BodyReader, S extends AnySchema | undefined>
+  = ((body: S extends AnySchema ? StandardSchemaV1.InferOutput<S> : BodyReaderOutput[B]) => any);
 
 type ResponseBodyParams<
   B extends BodyReader,
-  S extends Schema<BodyReaderOutput[B], any> | undefined,
+  S extends AnySchema | undefined,
   T extends Transform<B, S> | undefined
 > =
   | [reader: B, transform?: T]
@@ -18,12 +20,12 @@ type ResponseBodyParams<
 
 type ReadResult<
   B extends BodyReader,
-  S extends Schema<BodyReaderOutput[B], any> | undefined,
+  S extends AnySchema | undefined,
   T extends Transform<B, S> | undefined
 > = undefined extends T
   ? undefined extends S
     ? BodyReaderOutput[B]
-    : S extends Schema<any, any>
+    : S extends StandardSchemaV1<any, any>
       ? StandardSchemaV1.InferOutput<S>
       : never
   : Awaited<ReturnType<T & Function>>;
@@ -44,7 +46,7 @@ type ReadResult<
  */
 export function responseBody<
   B extends BodyReader,
-  S extends Schema<BodyReaderOutput[B], any> | undefined,
+  S extends AnySchema | undefined,
   T extends Transform<B, S> | undefined
 >(...[argA, argB, argC]: ResponseBodyParams<B, S, T>) {
   let reader, schema, transform;
