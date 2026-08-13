@@ -1,7 +1,7 @@
 {
   "name": "http-contract",
   "module": "index.ts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "exports": {
     ".": "./index.ts",
     "./errors": "./errors.ts",
