@@ -134,6 +134,6 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
       }
     }
 
-    return ContractResponse["from"](this.endpoint, res, valid as any);
+    return ContractResponse["from"](this.endpoint, res, valid as any, this.params as any);
   }
 }

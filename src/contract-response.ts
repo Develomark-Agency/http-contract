@@ -16,23 +16,27 @@ import type { Endpoint } from "./endpoint";
 export class ContractResponse<E extends Endpoint<any>> implements Response {
   #response;
   #valid;
+  #params;
 
   private constructor(
     private endpoint: E,
     response: Response,
-    valid: Endpoint.InferValidParams<E>
+    valid: Endpoint.InferValidParams<E>,
+    params: Endpoint.InferCallParams<E>
   ) {
     this.#response = response;
     this.#valid = valid;
+    this.#params = params;
   }
 
   /** Wraps a response and the values produced by its response modifiers. */
   static from<E extends Endpoint<any>>(
     endpoint: E,
     response: Response,
-    valid: Endpoint.InferValidParams<E>
+    valid: Endpoint.InferValidParams<E>,
+    params: Endpoint.InferCallParams<E>
   ) {
-    return new ContractResponse(endpoint, response, valid);
+    return new ContractResponse(endpoint, response, valid, params);
   }
 
   /** Whether the response status is in the successful range. */
@@ -74,5 +78,9 @@ export class ContractResponse<E extends Endpoint<any>> implements Response {
    */
   get valid() {
     return this.#valid as Endpoint.InferValidParams<E>;
+  }
+
+  get params(): Endpoint.InferCallParams<E> {
+    return this.#params;
   }
 }
