@@ -1,6 +1,6 @@
 import type { Endpoint } from "./endpoint";
 import { applyHeaderPatch, defaultSerializeValue } from "./common";
-import { NO_MODIFIER_ARGS, type AnyEndpointModifier } from "./endpoint-modifier";
+import { NO_MODIFIER_ARGS } from "./endpoint-modifier";
 import { NetworkError } from "./errors";
 import { ContractResponse } from "./contract-response";
 
@@ -10,7 +10,7 @@ export namespace ContractRequest {
 }
 
 /** The argument tuple accepted by an endpoint request. */
-export type RequestParams<E extends Endpoint<AnyEndpointModifier[]>> = {} extends Endpoint.InferCallParams<E>
+export type RequestParams<E extends Endpoint.Some> = {} extends Endpoint.InferCallParams<E>
   ? [params?: Endpoint.InferCallParams<E>, init?: ContractRequest.Init<keyof Endpoint.InferCallParams<E>>]
   : [params: Endpoint.InferCallParams<E>, init?: ContractRequest.Init<keyof Endpoint.InferCallParams<E>>];
 
@@ -21,7 +21,7 @@ export type RequestParams<E extends Endpoint<AnyEndpointModifier[]>> = {} extend
  * pass a request around before sending it; use `Endpoint.fetch()` for the common
  * build-and-send case.
  */
-export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
+export class ContractRequest<E extends Endpoint.Runnable> {
   #params;
 
   private constructor(
@@ -36,7 +36,7 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
     return this.#params as Endpoint.InferCallParams<E> | ({} extends Endpoint.InferCallParams<E> ? undefined : never);
   }
 
-  private static from<E extends Endpoint<AnyEndpointModifier[]>>(
+  private static from<E extends Endpoint.Runnable>(
     endpoint: E,
     params?: Endpoint.InferCallParams<E>,
     init?: ContractRequest.Init<keyof Endpoint.InferCallParams<E>>
@@ -54,7 +54,7 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
 
   private async resolveRequest() {
     const modifiers = this.endpoint[" ~"]["modifiers"];
-    const api = this.endpoint["api"];
+    const api = this.endpoint[" ~"]["api"];
     const params = this.params as Record<string, unknown>;
     const initFromRequest: RequestInit = this.init ?? {};
 
@@ -108,19 +108,31 @@ export class ContractRequest<E extends Endpoint<AnyEndpointModifier[]>> {
   }
 
   /**
-   * Applies each request modifier, sends the request, then applies each response
-   * modifier. Throws the modifier error or `NetworkError` when a step fails.
+   * Applies request modifiers, runs middleware around the HTTP request, then
+   * applies response modifiers. Throws a modifier error or `NetworkError` when
+   * a step fails.
    */
   async run() {
     const modifiers = this.endpoint[" ~"]["modifiers"];
+    const middlewares = this.endpoint[" ~"]["middlewares"];
     const { url, init, fetch } = await this.resolveRequest();
 
-    let res: Response;
-    try {
-      res = await fetch(url, init);
-    } catch (e) {
-      throw new NetworkError({ cause: e });
+    async function send(request: { url: URL, init: RequestInit }) {
+      try {
+        return await fetch(request.url, request.init);
+      } catch (e) {
+        throw new NetworkError({ cause: e });
+      }
     }
+
+    async function dispatch(index: number, request: { url: URL, init: RequestInit }): Promise<Response> {
+      const current = middlewares[index];
+      if(!current) return send(request);
+
+      return current.run(request, nextRequest => dispatch(index + 1, nextRequest ?? request));
+    }
+
+    const res = await dispatch(0, { url, init });
 
     const valid: Record<PropertyKey, unknown> = {};
     for(const mod of modifiers) {

@@ -3,7 +3,7 @@
  * These exports may change more often than the package's main API.
  */
 export { Adapter } from "./src/adapter";
-export { Endpoint, type CheckUniqueKeys } from "./src/endpoint";
+export { Endpoint, type AnyEndpointItem, type CheckUniqueKeys } from "./src/endpoint";
 export { ContractRequest, type RequestParams } from "./src/contract-request";
 export { ContractResponse } from "./src/contract-response";
 

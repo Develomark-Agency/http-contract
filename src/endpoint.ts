@@ -3,10 +3,37 @@ import type { APIConnector } from "./api";
 import type { OptionalizeEmpties, RemoveEmpties, RemoveNevers, UnionToIntersection } from "./common";
 import { ContractRequest, type RequestParams } from "./contract-request";
 import type { AnyEndpointModifier, AnyRequestModifier, callContribution, validContribution } from "./endpoint-modifier";
+import type { EndpointMiddleware } from "./endpoint-middleware";
+
+/** A request modifier, response modifier, or middleware accepted by an endpoint. */
+export type AnyEndpointItem = AnyEndpointModifier | EndpointMiddleware;
+
+type ExtractItemModifiers<Items extends readonly AnyEndpointItem[]> =
+  number extends Items["length"]
+    ? Array<Extract<Items[number], AnyEndpointModifier>>
+    : Items extends readonly[
+      infer Head extends AnyEndpointItem,
+      ...infer Tail extends readonly AnyEndpointItem[]
+    ]
+      ? Head extends AnyEndpointModifier
+        ? [Head, ...ExtractItemModifiers<Tail>]
+        : ExtractItemModifiers<Tail>
+      : [];
 
 export namespace Endpoint {
   /** Any endpoint shape from which modifier types can be read. */
   export type Some = { " ~": { modifiers: AnyEndpointModifier[] } };
+  /** An endpoint shape that can build and send a request. */
+  export type Runnable = Some & {
+    " ~": Some[" ~"] & {
+      api: APIConnector,
+      middlewares: EndpointMiddleware[]
+    }
+  };
+  /** An endpoint shape that can produce a JSON Schema. */
+  export type Adaptable = Some & {
+    toJSONSchema(options: StandardJSONSchemaV1.Options): Record<string, unknown>
+  };
   /** Gets the modifier tuple from an endpoint type. */
   export type ExtractModifiers<E extends Some> = E[" ~"]["modifiers"];
 
@@ -42,19 +69,22 @@ export namespace Endpoint {
 }
 
 /** Reports duplicate request or response modifier tags at compile time. */
-export type CheckUniqueKeys<M extends readonly AnyEndpointModifier[], Seen = never> =
-  M extends readonly[infer Head extends AnyEndpointModifier, ...infer Tail extends readonly AnyEndpointModifier[]]
-    ? `${Head["side"]} ${Head["tag"]}` extends Seen
-      ? { readonly "Duplicate endpoint modifier": `${Head["side"]} ${Head["tag"]}` }
-      : CheckUniqueKeys<Tail, Seen | `${Head["side"]} ${Head["tag"]}`>
+export type CheckUniqueKeys<Items extends readonly AnyEndpointItem[], Seen = never> =
+  Items extends readonly[infer Head extends AnyEndpointItem, ...infer Tail extends readonly AnyEndpointItem[]]
+    ? Head extends AnyEndpointModifier
+      ? `${Head["side"]} ${Head["tag"]}` extends Seen
+        ? { readonly "Duplicate endpoint modifier": `${Head["side"]} ${Head["tag"]}` }
+        : CheckUniqueKeys<Tail, Seen | `${Head["side"]} ${Head["tag"]}`>
+      : CheckUniqueKeys<Tail, Seen>
     : unknown;
 
 /**
- * A typed HTTP operation built from request and response modifiers.
+ * A typed HTTP operation built from request modifiers, middleware, and response
+ * modifiers.
  *
  * Request modifiers determine the parameters accepted by `request()` and
- * `fetch()`. Response modifiers determine the values available through
- * `ContractResponse.valid`.
+ * `fetch()`. Middleware can inspect, replace, or skip the HTTP request. Response
+ * modifiers determine the values available through `ContractResponse.valid`.
  *
  * @example
  * ```ts
@@ -69,15 +99,26 @@ export type CheckUniqueKeys<M extends readonly AnyEndpointModifier[], Seen = nev
  * ```
  */
 export class Endpoint<
-  const Modifiers extends AnyEndpointModifier[]
+  const Items extends AnyEndpointItem[]
 > {
-  " ~";
+  " ~": {
+    api: APIConnector,
+    modifiers: ExtractItemModifiers<Items>,
+    middlewares: EndpointMiddleware[]
+  };
   /** Creates an endpoint. Prefer `APIConnector.endpoint()` so types infer cleanly. */
   constructor(
-    private api: APIConnector,
-    ...modifiers: Modifiers & CheckUniqueKeys<Modifiers>
+    api: APIConnector,
+    ...items: Items & CheckUniqueKeys<Items>
   ) {
-    this[" ~"] = { modifiers: modifiers as Modifiers };
+    const modifiers = items.filter(item => "side" in item);
+    const middlewares = items.filter(item => "kind" in item && item.kind === "middleware");
+
+    this[" ~"] = {
+      api,
+      modifiers: modifiers as unknown as ExtractItemModifiers<Items>,
+      middlewares: middlewares as EndpointMiddleware[]
+    };
   }
 
   /**
@@ -106,7 +147,8 @@ export class Endpoint<
    * modifier's definition.
    */
   toJSONSchema(options: StandardJSONSchemaV1.Options): Record<string, unknown> {
-    const requestModifiers = this[" ~"].modifiers.filter(
+    const modifiers = this[" ~"].modifiers as AnyEndpointModifier[];
+    const requestModifiers = modifiers.filter(
       (modifier): modifier is AnyRequestModifier => modifier.side === "request"
     );
     const schemas = requestModifiers.flatMap(modifier => {

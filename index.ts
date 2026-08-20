@@ -1,6 +1,12 @@
 /** Public APIs for defining and calling typed HTTP endpoints. */
 export { APIConnector } from "./src/api";
 export { OpenAIJSONSchemaAdapter } from "./src/openai-json-schema";
+export {
+  middleware,
+  type EndpointMiddleware,
+  type EndpointMiddlewareHandler,
+  type EndpointMiddlewareNext
+} from "./src/endpoint-middleware";
 
 export { method, type Method } from "./src/endpoint-modifiers/method";
 export { path, type PathModifier } from "./src/endpoint-modifiers/path";

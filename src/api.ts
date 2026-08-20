@@ -1,6 +1,5 @@
 import { resolvePrimitive, resolvePrimitiveRecord, type FetchLike, type GetterOr, type URLSafeValue } from "./common";
-import type { AnyEndpointModifier } from "./endpoint-modifier";
-import { Endpoint, type CheckUniqueKeys } from "./endpoint";
+import { Endpoint, type AnyEndpointItem, type CheckUniqueKeys } from "./endpoint";
 
 export namespace APIConnector {
   /** The request state passed through an API connector. */
@@ -71,14 +70,16 @@ export class APIConnector {
   }
 
   /**
-   * Creates a typed endpoint from request and response modifiers.
+   * Creates a typed endpoint from request modifiers, middleware, and response
+   * modifiers.
    *
-   * Modifier order controls the order in which request and response changes run.
-   * TypeScript rejects two modifiers with the same side and tag.
+   * Request modifiers run first. Middleware then nests in declaration order
+   * around the HTTP request. Response modifiers run last. TypeScript rejects
+   * two modifiers with the same side and tag.
    */
   endpoint<
-    const Modifiers extends AnyEndpointModifier[]
-  >(...modifiers: Modifiers & CheckUniqueKeys<Modifiers>) {
-    return new Endpoint<Modifiers>(this, ...modifiers);
+    const Items extends AnyEndpointItem[]
+  >(...items: Items & CheckUniqueKeys<Items>) {
+    return new Endpoint<Items>(this, ...items);
   }
 }

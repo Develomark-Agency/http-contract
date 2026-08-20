@@ -13,7 +13,7 @@ import type { Endpoint } from "./endpoint";
  * const post = await response.valid.body();
  * ```
  */
-export class ContractResponse<E extends Endpoint<any>> implements Response {
+export class ContractResponse<E extends Endpoint.Some> implements Response {
   #response;
   #valid;
   #params;
@@ -30,7 +30,7 @@ export class ContractResponse<E extends Endpoint<any>> implements Response {
   }
 
   /** Wraps a response and the values produced by its response modifiers. */
-  static from<E extends Endpoint<any>>(
+  static from<E extends Endpoint.Some>(
     endpoint: E,
     response: Response,
     valid: Endpoint.InferValidParams<E>,

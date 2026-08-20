@@ -5,3 +5,4 @@ await import("./04-update-post.ts");
 await import("./05-delete-post.ts");
 await import("./06-headers-and-config.ts");
 await import("./07-safe-validation.ts");
+await import("./08-middleware.ts");

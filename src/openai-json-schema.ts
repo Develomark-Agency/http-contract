@@ -1,6 +1,5 @@
 import { Adapter } from "./adapter";
 import type { Endpoint } from "./endpoint";
-import type { AnyEndpointModifier } from "./endpoint-modifier";
 
 type JSONSchema = boolean | Record<string, any>;
 
@@ -23,7 +22,7 @@ type JSONSchema = boolean | Record<string, any>;
  * ```
  */
 export class OpenAIJSONSchemaAdapter<
-  E extends Endpoint<AnyEndpointModifier[]>
+  E extends Endpoint.Adaptable
 > extends Adapter<E, Record<string, unknown>> {
   protected override readonly target = "draft-2020-12";
 

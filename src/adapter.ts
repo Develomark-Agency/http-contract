@@ -1,6 +1,5 @@
 import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 import type { Endpoint } from "./endpoint";
-import type { AnyEndpointModifier } from "./endpoint-modifier";
 
 /**
  * Base class for exposing endpoint inputs to another system.
@@ -13,7 +12,7 @@ import type { AnyEndpointModifier } from "./endpoint-modifier";
  * @typeParam Schema - The schema format exposed to the other system.
  */
 export abstract class Adapter<
-  E extends Endpoint<AnyEndpointModifier[]>,
+  E extends Endpoint.Adaptable,
   Schema
 > {
   #sourceSchema?: Record<string, unknown>;
